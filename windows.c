@@ -34,7 +34,7 @@ static void *GetAnyGLFuncAddress(const char *name)
     p = (void *)GetProcAddress(module, name);
 
     if(p == 0 || (p == (void*)0x1) || (p == (void*)0x2) || (p == (void*)0x3) || (p == (void*)-1)){
-      log_printf("%s\n", name);
+      printf("%s\n", name);
       assert(false);
     }
   }
@@ -130,40 +130,17 @@ static void LoadOpenGLFunctions(){
   DestroyWindow(dummy_window);
 }
 
-HANDLE log_stdout = NULL;
-char log_buffer_s[1024];
-
-void log_printf(const char *string, ...){
-  u32 written;
-  va_list args;
-  va_start(args, string);
-  written = vsprintf_s(log_buffer_s, sizeof(log_buffer_s), string, args);
-  va_end(args);
-
-  //WriteFile(log_stdout, log_buffer_s, written1, &written2, NULL);
-  WriteConsole(log_stdout, log_buffer_s, written, NULL, NULL);
-}
-
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine, int nCmdShow){
 
   //Create Console
   if(!AttachConsole(ATTACH_PARENT_PROCESS))
     AllocConsole();
 
-  log_stdout = GetStdHandle(STD_OUTPUT_HANDLE);
-  assert(log_stdout);
-
-  log_printf("#Console Teste\n");
-  log_printf("teste float:%f, teste int:%d, teste string:%s\n", PI, 666, "Cecilia");
-  log_printf("Funcionou!\n");
-
   // Make stdio stream functions work on new console on window apps!
   FILE *fpstdin = stdin, *fpstdout = stdout, *fpstderr = stderr;
-
   freopen_s(&fpstdin, "CONIN$", "r", stdin);
   freopen_s(&fpstdout, "CONOUT$", "w", stdout);
   freopen_s(&fpstderr, "CONOUT$", "w", stderr);
-  printf("Printf\n");
 
   LoadOpenGLFunctions();
 
