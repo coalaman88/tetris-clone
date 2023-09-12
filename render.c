@@ -102,6 +102,7 @@ static void init_batchs(){
   vertex_count = 0;
 }
 
+// TODO use this instead of this method: https://learn.microsoft.com/en-us/windows/win32/fileio/obtaining-directory-change-notifications
 b32 update_file_info(FileInfo *info){
   FILETIME old_last_write = info->last_write;
   GetFileTime(info->file, NULL, NULL, &info->last_write);
@@ -188,8 +189,8 @@ GLuint create_program(HANDLE vert_file, HANDLE frag_file, const char *ordered_bi
   i32 error_string_size;
 
   i32 vert_size, frag_size;
-  const char *vert_data = ReadWholeFile(vert_file, &vert_size);
-  const char *frag_data = ReadWholeFile(frag_file, &frag_size);
+  const char *vert_data = os_read_whole_file(vert_file, &vert_size);
+  const char *frag_data = os_read_whole_file(frag_file, &frag_size);
 
   GLuint frag = glCreateShader(GL_FRAGMENT_SHADER);
   GLuint vert = glCreateShader(GL_VERTEX_SHADER);

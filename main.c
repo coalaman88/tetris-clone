@@ -26,6 +26,8 @@ i32 Grid[GridH][GridW] = {0};
 i32 PieceStatistics[array_size(Pieces)] = {0};
 Scoreboard HighScore;
 
+const char HighScoreFileName[] = "highscore.dat";
+
 const i32 BlinkTile = 200;
 
 static b32 confirmation_prompt_open = false;
@@ -299,16 +301,24 @@ i32 pop_stack(Stack *stack){
 
 
 void EngineInit(){
+    b32 result;
     init_render();
     init_fonts();
-    load_font("C:\\Windows\\Fonts\\Arial.ttf", 36, &BigFont);
-    load_font("C:\\Windows\\Fonts\\Arial.ttf", 20, &DefaultFont); // FIXME dangerous stuff..
+    
+    char font_path[256] = {0};
+    os_font_path(font_path, array_size(font_path));
+    result = strcat_s(font_path, array_size(font_path), "\\Arial.ttf") == 0;
+    assert(result);
+    printf("font path: %s\n", font_path);
+    
+    load_font(font_path, 36, &BigFont);
+    load_font(font_path, 20, &DefaultFont);
     set_font(&DefaultFont);
 
     Aim.next_piece = random_piece();
     spawn_next_piece();
 
-    b32 result = load_highscore_from_disk("highscore.dat", &HighScore);
+    result = load_highscore_from_disk(HighScoreFileName, &HighScore);
     if(!result){
         set_zero(&HighScore, sizeof(HighScore));
     }
@@ -626,7 +636,7 @@ void game_running(){
 
     // @Temp Force save scoreboard
     if(KeyPressed(Keyboard.h)){
-        save_highscore_to_disk("highscore.dat", &HighScore);
+        save_highscore_to_disk(HighScoreFileName, &HighScore);
     }
 
     // Call Settings Menu

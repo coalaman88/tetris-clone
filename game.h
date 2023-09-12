@@ -6,12 +6,11 @@
 
 typedef struct {
   i32 side;
-  i32 type; // TODO id of color on grid
+  i32 type;
   i32 bitmap[4 * 4];
 }Piece;
 extern const Piece *Pieces[7];
 #define DebugGameSeed 7024193872342
-
 
 typedef struct{
   f32 position[2];
@@ -34,9 +33,8 @@ extern struct Particles_S Particles;
 
 TextureInfo load_texture(const char *file_name);
 
-extern char* ReadWholeFile(void *file, i32 *size);
-
-void create_particle(f32 x, f32 y);
+extern char* os_read_whole_file(void *file, i32 *size);
+void os_font_path(char *buffer, u32 size);
 
 typedef struct{
   char character;

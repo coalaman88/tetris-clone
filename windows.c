@@ -379,18 +379,27 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
-char* ReadWholeFile(HANDLE file, i32 *size){
-  u32 file_size = GetFileSize(file, NULL);
+char* os_read_whole_file(void* file, i32 *size){
+  HANDLE *_file = (HANDLE*)file;
+  u32 file_size = GetFileSize(_file, NULL);
   char *buffer = VirtualAlloc(NULL, file_size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
   DWORD read;
-  i32 result = ReadFile(file, (void*)buffer, file_size, &read, NULL);
+  i32 result = ReadFile(_file, (void*)buffer, file_size, &read, NULL);
   assert(result);
   assert(read == file_size);
-  SetFilePointer(file, 0, 0, FILE_BEGIN);
+  SetFilePointer(_file, 0, 0, FILE_BEGIN);
   if(size) *size = file_size;
   return buffer;
 }
 
 void FreeFile(void *mem){
   VirtualFree(mem, 0, MEM_RELEASE);
+}
+
+void os_font_path(char *buffer, u32 size){
+    buffer[0] = 0;
+    ExpandEnvironmentStringsA("%windir%", buffer, size);
+    assert(buffer[0]);
+    i32 result = strcat_s(buffer, size, "\\Fonts") == 0;
+    assert(result);
 }

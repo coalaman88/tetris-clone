@@ -13,6 +13,7 @@ set warnings=/WX /W4 /wd4996 /wd4201 /wd4152 /wd4100
 set debug_warnings=/wd4189 /wd4101
 set debugger=/Zi
 
+set includes=
 set "includes=%includes% /Idependencies\freetype-lib"
 set "includes=%includes% /Idependencies\opengl-lib"
 set "includes=%includes% /Idependencies\stb-lib"
