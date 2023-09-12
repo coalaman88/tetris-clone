@@ -1,12 +1,10 @@
-#version 140
+#version 330
 in vec2 pos;
 in vec4 color;
 
 uniform mat4 ident_matrix;
 uniform mat4 trans_matrix;
 out vec4 vertexColor;
-
-uniform int mode;
 
 void main()
 {
