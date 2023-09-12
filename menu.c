@@ -11,17 +11,42 @@ static i32 menu_stack_top = 0;
 static i32 pause_cursor_y = 0;
 static i32 main_cursor_y = 0;
 
-typedef struct{ // @MOVE
-  char name[7];
-  i32 month, day, year;
-  i64 score;
-}Highscore;
+b32 load_highscore_from_disk(const char *file_name, Scoreboard *scoreboard){
+  FILE *file = fopen(file_name, "rb");
+  if(!file){
+    return false;
+  }
 
-Highscore Board[] = {
-  {"Andre", 12, 12, 2022, 243000},
-  {"John", 8, 21, 2021, 123400},
-  {"Ce", 12, 12, 2022, 23400},
-};
+  size_t read = fread(scoreboard, sizeof(Scoreboard), 1, file);
+  fclose(file);
+
+  if(read < 1){
+    // TODO handle this..
+    assert(false);
+    return false;
+  }
+
+  return true;
+}
+
+b32 save_highscore_to_disk(const char *file_name, const Scoreboard *scoreboard){
+  // TODO backup
+  FILE *file = fopen(file_name, "w+b");
+  if(!file){
+    return false;
+  }
+
+  size_t written = fwrite(scoreboard, sizeof(Scoreboard), 1, file);
+  fclose(file);
+
+  if(written < 1){
+    // TODO handle this..
+    assert(false);
+    return false;
+  }
+
+  return true;
+}
 
 static void move_cursor(i32 *cursor, i32 max){
   i32 pos = *cursor;
@@ -83,7 +108,7 @@ void main_menu(){
     f32 y_pen = 0;
     draw_centered_text(x, y + spacing_y * y_pen++, Yellow_v4, "Tetris");
     draw_centered_text(x, y + spacing_y * y_pen++, main_cursor_y == y_pen - 1? White_v4 : grey, "Start Game");
-    draw_centered_text(x, y + spacing_y * y_pen++, main_cursor_y == y_pen - 1? White_v4 : grey, "Highscore Board");
+    draw_centered_text(x, y + spacing_y * y_pen++, main_cursor_y == y_pen - 1? White_v4 : grey, "ScoreInfo Scoreboard");
     draw_centered_text(x, y + spacing_y * y_pen++, main_cursor_y == y_pen - 1? White_v4 : grey, "Settings");
     draw_centered_text(x, y + spacing_y * y_pen++, main_cursor_y == y_pen - 1? White_v4 : grey, "Exit");
   }
@@ -91,6 +116,9 @@ void main_menu(){
 
 
 void highscore_menu(){
+  // TODO
+  // Option to clear highscore from game
+  
   if(KeyPressed(Keyboard.esc))
     close_menu();
 
@@ -100,11 +128,19 @@ void highscore_menu(){
     const f32 y = WHEIGHT / 3.0f;
     const f32 spacing_y = (f32)CurrentFont->line_height * 1.1f;
     f32 y_pen = 0;
-    Highscore *b = Board;
-    draw_centered_text(x, y + spacing_y * y_pen++, Blue_v4, "-Highscore Board-");
-    draw_centered_text(x, y + spacing_y * y_pen++, White_v4, "1# %s %02d/%02d/%d %d", b[0].name, b[0].month, b[0].day, b[0].year, b[0].score);
-    draw_centered_text(x, y + spacing_y * y_pen++, White_v4, "2# %s %02d/%02d/%d %d", b[1].name, b[1].month, b[1].day, b[1].year, b[1].score);
-    draw_centered_text(x, y + spacing_y * y_pen++, White_v4, "3# %s %02d/%02d/%d %d", b[2].name, b[2].month, b[2].day, b[2].year, b[2].score);
+
+    draw_centered_text(x, y + spacing_y * y_pen++, Blue_v4, "-ScoreInfo Scoreboard-");
+
+    if(HighScore.count > 0){
+      ScoreInfo *b = HighScore.score;
+      for(i32 i = 0; i < HighScore.count; i++){
+        draw_centered_text(x, y + spacing_y * y_pen++, White_v4, "%d# %s %02d/%02d/%d %d",
+        i + 1, b[0].name, b[0].month, b[0].day, b[0].year, b[0].score);
+      }
+    } else {
+        y_pen++;
+        draw_centered_text(x, y + spacing_y * y_pen, White_v4, "Empty");
+    }
   }
 }
 

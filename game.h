@@ -89,3 +89,21 @@ enum MenuScreens{
 
 void menu();
 void open_menu(i32 destination);
+
+// @Move move?
+
+typedef struct{ // @MOVE
+  char name[7];
+  i32 month, day, year;
+  i64 score;
+}ScoreInfo;
+
+typedef struct{
+  i32 count;
+  ScoreInfo score[3];
+}Scoreboard;
+
+extern Scoreboard HighScore;
+
+b32 save_highscore_to_disk(const char *, const Scoreboard *);
+b32 load_highscore_from_disk(const char *, Scoreboard *);

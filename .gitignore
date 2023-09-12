@@ -70,3 +70,4 @@ rng_test.c
 *.bin
 count_lines.bat
 build.bat
+highscore.dat

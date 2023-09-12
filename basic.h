@@ -113,9 +113,9 @@ static inline f32 Signf(f32 value){
   return 0.0f;
 }
 
-static inline void SetZero(void *mem, i32 size){
+static inline void set_zero(void *mem, size_t size){
   u8 *block = (u8*)mem;
-  for(i32 i = 0; i < size; i++){
+  for(size_t i = 0; i < size; i++){
     block[i] = 0;
   }
 }

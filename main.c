@@ -24,6 +24,7 @@ i32 StreakOn = false;
 i32 StreakTimer = 0;
 i32 Grid[GridH][GridW] = {0};
 i32 PieceStatistics[array_size(Pieces)] = {0};
+Scoreboard HighScore;
 
 const i32 BlinkTile = 200;
 
@@ -306,6 +307,11 @@ void EngineInit(){
 
     Aim.next_piece = random_piece();
     spawn_next_piece();
+
+    b32 result = load_highscore_from_disk("highscore.dat", &HighScore);
+    if(!result){
+        set_zero(&HighScore, sizeof(HighScore));
+    }
 }
 
 static inline Vec4 invert_color(Vec4 color){
@@ -458,7 +464,7 @@ void update_grid(){
 
 }
 
-void save_grid(){ // debug
+void save_grid(){ // @debug
     FILE *file = fopen("grid.bin", "w+b");
     size_t written = fwrite(Grid, sizeof(Grid), 1, file);
     fclose(file);
@@ -469,7 +475,7 @@ void save_grid(){ // debug
     enqueue_message(Green_v4, "Grid saved!");
 }
 
-void load_grid(){ // debug
+void load_grid(){ // @debug
     FILE *file = fopen("grid.bin", "rb");
     if(!file){
         enqueue_message(Red_v4, "No grid save file found!");
@@ -610,12 +616,17 @@ void prompt(){
 }
 
 void game_running(){
-    // DEBUG Save/Load grid
+    // @DEBUG Save/Load grid
     if(Keyboard.ctrl.state && KeyPressed(Keyboard.s))
         save_grid();
     if(Keyboard.ctrl.state && KeyPressed(Keyboard.l)){
         load_grid();
         restart_game(false);
+    }
+
+    // @Temp Force save scoreboard
+    if(KeyPressed(Keyboard.h)){
+        save_highscore_to_disk("highscore.dat", &HighScore);
     }
 
     // Call Settings Menu
