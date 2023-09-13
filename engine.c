@@ -20,7 +20,7 @@ void EngineSetup(u64 seed){
     EngineInit();
 }
 
-void EngineClearInput(){
+void EngineClearInput(void){
     for(i32 k = 0; k < ArraySize(Keyboard.keys); k++){
         Keyboard.keys[k].state = false;
     }
@@ -29,7 +29,7 @@ void EngineClearInput(){
     Mouse.right.state = false;
 }
 
-void EngineProcessInput(){
+void EngineProcessInput(void){
     for(i32 k = 0; k < ArraySize(Keyboard.keys); k++){
         Keyboard.keys[k].old_state = Keyboard.keys[k].state;
     }

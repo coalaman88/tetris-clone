@@ -117,7 +117,7 @@ void set_font(Font *font){
     CurrentFont = font;
 }
 
-void init_fonts(){
+void init_fonts(void){
     b32 ft_error;
     ft_error = FT_Init_FreeType(&Lib);
     assert(!ft_error);
@@ -224,7 +224,7 @@ i32 draw_text_warped(Rect rec, Vec4 color, const char *format, ...){
     return pen.x; // TODO return Vec2i
 }
 
-void draw_font_test(){
+void draw_font_test(void){
     i32 c = 'f';
     render_glyph(CurrentFont->glyphs[c], 200, 200, White_v4);
     immediate_draw_texture(100, 0, 1.0f, CurrentFont->atlas);

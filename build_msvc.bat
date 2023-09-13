@@ -9,7 +9,7 @@ set name=program.exe
 set compiler=cl
 set files=main.c windows.c fonts.c render.c engine.c menu.c
 set libs=User32.lib Gdi32.lib Winmm.lib
-set warnings=/WX /W4 /wd4996 /wd4201 /wd4152 /wd4100
+set warnings=/WX /W4 /w44255 /wd4996 /wd4201 /wd4152
 set debug_warnings=/wd4189 /wd4101
 set debugger=/Zi
 

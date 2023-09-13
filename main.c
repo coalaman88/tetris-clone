@@ -5,7 +5,6 @@
 #pragma comment(lib, "opengl32.lib")
 
 #include <GL/glcorearb.h>
-#include <GL/glu.h>
 
 #include "engine.h"
 #include "basic.h"
@@ -152,7 +151,7 @@ struct DebugMessageQueue_S{
     DebugMessage messages[10];
 }DebugMessageQueue = {.start = 0, .end = 0, .time = 0, .messages_time = 60};
 
-void update_messages(){
+void update_messages(void){
     struct DebugMessageQueue_S *log = &DebugMessageQueue;
     const f32 spacing = 30;
     f32 offset = (f32)CurrentFont->line_height;
@@ -210,11 +209,11 @@ static inline Vec4 get_piece_color(i32 piece_type){
 
 b32 piece_collided(i32 x, i32 y, const Piece *piece);
 
-Piece random_piece(){
+Piece random_piece(void){
     return *Pieces[random_n(array_size(Pieces) - 1)];
 }
 
-void spawn_next_piece(){
+void spawn_next_piece(void){
     Aim.piece = Aim.next_piece;
     Aim.next_piece = random_piece();
 
@@ -303,7 +302,7 @@ i32 pop_stack(Stack *stack){
 // input diagonal moviment
 
 
-void EngineInit(){
+void EngineInit(void){
     b32 result;
     init_render();
     init_fonts();
@@ -425,7 +424,7 @@ void draw_grid_debug(i32 t_x, i32 t_y){
     }
 }
 
-void update_grid(){
+void update_grid(void){
     if(GameOver || GamePause) return;
     if(StreakOn){
         if(StreakTimer <= 0){
@@ -476,7 +475,7 @@ void update_grid(){
 
 }
 
-void save_grid(){ // @debug
+void save_grid(void){ // @debug
     FILE *file = fopen("grid.bin", "w+b");
     size_t written = fwrite(Grid, sizeof(Grid), 1, file);
     fclose(file);
@@ -487,7 +486,7 @@ void save_grid(){ // @debug
     enqueue_message(Green_v4, "Grid saved!");
 }
 
-void load_grid(){ // @debug
+void load_grid(void){ // @debug
     FILE *file = fopen("grid.bin", "rb");
     if(!file){
         enqueue_message(Red_v4, "No grid save file found!");
@@ -535,7 +534,7 @@ void draw_statistics(i32 x, i32 y){
     }
 }
 
-void move_piece(){
+void move_piece(void){
     if(GameOver || GamePause || StreakOn) return;
 
     if(KeyPressed(Keyboard.q)){
@@ -575,7 +574,7 @@ void move_piece(){
 
 enum GameModes GameMode = GM_Menu;
 
-void draw_scene(){
+void draw_scene(void){
 
     glClearColor(0.1f, 0.1f, 0.1f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -595,7 +594,7 @@ void draw_scene(){
 
 }
 
-void prompt(){
+void prompt(void){
     if(KeyPressed(Keyboard.w))
         confirmation_prompt_cursor++;
     if(KeyPressed(Keyboard.s))
@@ -627,7 +626,7 @@ void prompt(){
     set_font(font_backup);
 }
 
-void game_running(){
+void game_running(void){
     // @DEBUG Save/Load grid
     if(Keyboard.ctrl.state && KeyPressed(Keyboard.s))
         save_grid();
@@ -733,7 +732,7 @@ void game_running(){
 
 }
 
-void EngineUpdate(){
+void EngineUpdate(void){
 
     // dirty key system
     pressed = false;
@@ -765,6 +764,6 @@ void EngineUpdate(){
 
 }
 
-void EngineDraw(){
+void EngineDraw(void){
 
 }

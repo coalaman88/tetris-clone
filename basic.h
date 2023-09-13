@@ -171,8 +171,8 @@ static f32 cubic_function(f32 x){
 extern u32 RNGseed;
 extern u64 RNGseed64;
 
-extern u32 Random();
-extern u64 Random64();
+extern u32 Random(void);
+extern u64 Random64(void);
 extern i32 random_in(i32 a, i32 b);
 extern u32 random_n(u32 max);
 
@@ -200,7 +200,7 @@ u32 random_n(u32 max){
     return Random() % (max + 1);
 }
 
-u64 Random64(){
+u64 Random64(void){
     u64 z = (RNGseed64 += UINT64_C(0x9E3779B97F4A7C15));
     z = (z ^ (z >> 30)) * UINT64_C(0xBF58476D1CE4E5B9);
     z = (z ^ (z >> 27)) * UINT64_C(0x94D049BB133111EB);

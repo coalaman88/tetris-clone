@@ -56,10 +56,10 @@ extern Font DefaultFont;
 extern Font *CurrentFont;
 
 // Fonts functions
-void init_fonts();
+void init_fonts(void);
 void load_font(const char *name, i32 height_pixel_size, Font *font);
 void set_font(Font *font);
-void draw_font_test(); // @Move
+void draw_font_test(void); // @Move
 
 // Log functions
 void log_printf(const char *, ...);
@@ -85,13 +85,13 @@ enum MenuScreens{
     S_Highscore
 };
 
-void menu();
+void menu(void);
 void open_menu(i32 destination);
 
 // @Move move?
 
 typedef struct{ // @MOVE
-    char name[7];
+    char name[6];
     i32 month, day, year;
     i64 score;
 }ScoreInfo;

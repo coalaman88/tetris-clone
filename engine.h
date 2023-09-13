@@ -51,11 +51,11 @@ extern struct S_Mouse Mouse;
 
 extern b32 GameRunning;
 
-void EngineInit();
-void EngineUpdate();
-void EngineDraw();
-void EngineClearInput();
-void EngineProcessInput();
+void EngineInit(void);
+void EngineUpdate(void);
+void EngineDraw(void);
+void EngineClearInput(void);
+void EngineProcessInput(void);
 void EngineSetup(u64 seed);
 
 #endif

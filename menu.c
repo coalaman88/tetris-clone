@@ -72,7 +72,7 @@ void open_menu(i32 destination){ // TODO save the cursor position in the stack?
     MenuScreen = destination;
 }
 
-static void close_menu(){
+static void close_menu(void){
     if(menu_stack_top == 0){
         GameMode = original_mode;
         return;
@@ -80,7 +80,7 @@ static void close_menu(){
     MenuScreen = menu_stack[--menu_stack_top];
 }
 
-void main_menu(){
+void main_menu(void){
 
     const i32 max_y = 3;
     move_cursor(&main_cursor_y, max_y);
@@ -115,7 +115,7 @@ void main_menu(){
 }
 
 
-void highscore_menu(){
+void highscore_menu(void){
     // TODO
     // Option to clear highscore from game
     
@@ -144,7 +144,7 @@ void highscore_menu(){
     }
 }
 
-void settings_menu(){
+void settings_menu(void){
     if(KeyPressed(Keyboard.esc))
         close_menu();
 
@@ -156,7 +156,7 @@ void settings_menu(){
     }
 }
 
-void pause_menu(){
+void pause_menu(void){
     const i32 max_y = 2;
     move_cursor(&pause_cursor_y, max_y);
 
@@ -188,7 +188,7 @@ void pause_menu(){
     }
 }
 
-void menu(){
+void menu(void){
 
     clear_screen(Vec4(0.1f, 0.1f, 0.1f, 0.0f));
 

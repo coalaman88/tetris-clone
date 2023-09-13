@@ -41,7 +41,7 @@ static void *GetAnyGLFuncAddress(const char *name)
     return p;
 }
 
-static void LoadOpenGLFunctions(){
+static void LoadOpenGLFunctions(void){
     HWND dummy_window = CreateWindowExW(
         0, L"STATIC", L"Dummy Window",
         WS_OVERLAPPED,
@@ -125,6 +125,8 @@ static void LoadOpenGLFunctions(){
 }
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine, int nCmdShow){
+    UNREFERENCED_PARAMETER(hPrevInstance);
+    UNREFERENCED_PARAMETER(pCmdLine);
 
     //Create Console
     if(!AttachConsole(ATTACH_PARENT_PROCESS))
@@ -236,7 +238,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
 
         EngineUpdate();
         EngineDraw();
-        EngineProcessInput(window_has_focus);
+        EngineProcessInput();
         DrawBuffer(window);
 
         QueryPerformanceCounter(&timer_end);

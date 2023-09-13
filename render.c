@@ -1,5 +1,4 @@
 #include <GL/glcorearb.h>
-#include <GL/glu.h>
 #include "engine.h"
 #include "util.h"
 #include "game.h"
@@ -7,7 +6,6 @@
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
-
 
 // Opengl reminders:
 // It is advised however, that you stick to powers-of-two for
@@ -96,7 +94,7 @@ static struct{
 GLuint create_program(HANDLE vert_file, HANDLE frag_file, const char *ordered_bind_attribs[], i32 bind_attribs_count);
 b32 compile_shader(GLuint shader);
 
-static void init_batchs(){
+static void init_batchs(void){
     BatchList.count = 0;
     BatchList.current = NULL;
     vertex_count = 0;
@@ -147,7 +145,7 @@ static inline void use_shader_context(ShaderContext *context){
         context->debug_info.setup_shader(context);
 }
 
-void draw_quads(){
+void draw_quads(void){
     i32 vertex_start = 0;
     glBufferSubData(GL_ARRAY_BUFFER, vertex_start, sizeof(Vertex) * vertex_count, vertex_buffer);
 
@@ -317,7 +315,7 @@ void setup_primitive_shader(ShaderContext *context){
     context->debug_info.program_is_ready = true;
 }
 
-void init_render(){
+void init_render(void){
     const unsigned char *version = glGetString(GL_VERSION);
     printf("opengl version:%s\n", version);
 

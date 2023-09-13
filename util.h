@@ -19,9 +19,9 @@ typedef Vertex2 Vec2f;
 
 #define Vec2i(X, Y) (Vec2i){.x = (X), .y = (Y)}
 
-f32 random_unit();
-f32 random_scalar();
-Vec2 random_vector();
+f32 random_unit(void);
+f32 random_scalar(void);
+Vec2 random_vector(void);
 Vec2 normalize_v2(Vec2 vec);
 
 //=============================================
@@ -153,17 +153,17 @@ b32 parse_int(const char *s, i32 *out);
 
 #ifdef UTIL_IMPLEMENT
 
-f32 random_unit(){
+f32 random_unit(void){
     const i32 presicion = 100000;
     return (f32)random_in(-presicion, presicion) / presicion;
 }
 
-f32 random_scalar(){
+f32 random_scalar(void){
     const i32 presicion = 100000;
     return (f32)random_n(presicion) / presicion;
 }
 
-Vec2 random_vector(){
+Vec2 random_vector(void){
     i32 sign = random_n(1) * 2 - 1;
     f32 x = (f32)random_in(-1000, 1000) / 1000.0f;
     f32 y = sqrtf(1.0f - (x * x)) * (f32)sign;

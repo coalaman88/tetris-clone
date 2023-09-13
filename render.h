@@ -65,6 +65,6 @@ typedef struct S_ShaderContext {
 extern struct S_ShaderContext TextureShader;
 extern struct S_ShaderContext PrimitiveShader;
 
-void init_render();
+void init_render(void);
 void push_render_quad_command(ShaderContext *context, u32 tex_id, Quad *data);
-void draw_quads();
+void draw_quads(void);
