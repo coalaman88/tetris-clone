@@ -36,33 +36,29 @@ extern PFNGLACTIVETEXTUREPROC glActiveTexture;
 extern PFNGLBLENDEQUATIONSEPARATEPROC glBlendEquationSeparate;
 extern PFNGLBLENDFUNCSEPARATEPROC glBlendFuncSeparate;
 extern PFNGLBINDTEXTUREUNITPROC glBindTextureUnit; // Extension
-
 extern PFNGLDRAWARRAYSINSTANCEDPROC glDrawArraysInstanced;
-
 extern PFNGLGETSTRINGIPROC glGetStringi;
 //extern PFNGLDRAWELEMENTSPROC glDrawElements;
-
-extern PFNGLGENBUFFERSPROC    glGenBuffers;
-
+extern PFNGLGENBUFFERSPROC  glGenBuffers;
 extern PFNGLGENVERTEXARRAYSPROC glGenVertexArrays;
 extern PFNGLBINDVERTEXARRAYPROC glBindVertexArray;
 
 typedef struct{
-  HANDLE file;
-  FILETIME last_write;
+    HANDLE file;
+    FILETIME last_write;
 }FileInfo;
 
 typedef struct S_ShaderContext {
-  u32 program_id;
-  u32 vertex_array_id;
+    u32 program_id;
+    u32 vertex_array_id;
 
-  struct{
-    FileInfo vert_file_info, frag_file_info;
-    b32 program_is_ready;
-    void (*setup_shader)(struct S_ShaderContext*);
-    const char **bind_attributes;
-    i32 bind_attributes_count;
-  }debug_info;
+    struct{
+        FileInfo vert_file_info, frag_file_info;
+        b32 program_is_ready;
+        void (*setup_shader)(struct S_ShaderContext*);
+        const char **bind_attributes;
+        i32 bind_attributes_count;
+    }debug_info;
 
 }ShaderContext;
 

@@ -21,309 +21,305 @@ PFNWGLCHOOSEPIXELFORMATARBPROC wglChoosePixelFormatARB;
 static b32 window_has_focus;
 
 static void DrawBuffer(HWND window){
-  HDC hdc = GetDC(window);
-  SwapBuffers(hdc);
-  ReleaseDC(window, hdc);
+    HDC hdc = GetDC(window);
+    SwapBuffers(hdc);
+    ReleaseDC(window, hdc);
 }
 
 static void *GetAnyGLFuncAddress(const char *name)
 {
-  void *p = (void *)wglGetProcAddress(name);
-  if(p == 0 || (p == (void*)0x1) || (p == (void*)0x2) || (p == (void*)0x3) || (p == (void*)-1)){
-    HMODULE module = LoadLibraryA("opengl32.dll");
-    p = (void *)GetProcAddress(module, name);
-
+    void *p = (void *)wglGetProcAddress(name);
     if(p == 0 || (p == (void*)0x1) || (p == (void*)0x2) || (p == (void*)0x3) || (p == (void*)-1)){
-      printf("%s\n", name);
-      assert(false);
+        HMODULE module = LoadLibraryA("opengl32.dll");
+        p = (void *)GetProcAddress(module, name);
+
+        if(p == 0 || (p == (void*)0x1) || (p == (void*)0x2) || (p == (void*)0x3) || (p == (void*)-1)){
+            printf("%s\n", name);
+            assert(false);
+        }
     }
-  }
-  return p;
+    return p;
 }
 
 static void LoadOpenGLFunctions(){
-  HWND dummy_window = CreateWindowExW(
-    0, L"STATIC", L"Dummy Window",
-    WS_OVERLAPPED,
-    CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-    NULL, NULL, NULL, NULL
-  );
-  assert(dummy_window);
+    HWND dummy_window = CreateWindowExW(
+        0, L"STATIC", L"Dummy Window",
+        WS_OVERLAPPED,
+        CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
+        NULL, NULL, NULL, NULL
+    );
+    assert(dummy_window);
 
-  // Set Pixel Format for OpenGL
-  HDC hdc = GetDC(dummy_window);
-  PIXELFORMATDESCRIPTOR pixel_format = {0};
-  pixel_format.nSize       = sizeof(pixel_format);
-  pixel_format.nVersion    = 1;
-  pixel_format.dwFlags     = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
-  pixel_format.iPixelType  = PFD_TYPE_RGBA;
-  pixel_format.cColorBits  = 32;
-  pixel_format.cAlphaBits  = 8;
-  //pixel_format.iLayerType  = PFD_MAIN_PLANE;
-  //pixel_format.dwLayerMask = PFD_MAIN_PLANE;
+    // Set Pixel Format for OpenGL
+    HDC hdc = GetDC(dummy_window);
+    PIXELFORMATDESCRIPTOR pixel_format = {0};
+    pixel_format.nSize      = sizeof(pixel_format);
+    pixel_format.nVersion   = 1;
+    pixel_format.dwFlags    = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+    pixel_format.iPixelType = PFD_TYPE_RGBA;
+    pixel_format.cColorBits = 32;
+    pixel_format.cAlphaBits = 8;
 
-  i32 result;
-  i32 index = ChoosePixelFormat(hdc, &pixel_format);
-  PIXELFORMATDESCRIPTOR suggested_pixel_format;
-  DescribePixelFormat(hdc, index, sizeof(PIXELFORMATDESCRIPTOR), &suggested_pixel_format);
-  result = SetPixelFormat(hdc, index, &suggested_pixel_format);
-  assert(result != FALSE);
+    i32 result;
+    i32 index = ChoosePixelFormat(hdc, &pixel_format);
+    PIXELFORMATDESCRIPTOR suggested_pixel_format;
+    DescribePixelFormat(hdc, index, sizeof(PIXELFORMATDESCRIPTOR), &suggested_pixel_format);
+    result = SetPixelFormat(hdc, index, &suggested_pixel_format);
+    assert(result != FALSE);
 
-  HGLRC hrc = wglCreateContext(hdc);
-  assert(hrc);
-  result = wglMakeCurrent(hdc, hrc);
-  assert(result);
+    HGLRC hrc = wglCreateContext(hdc);
+    assert(hrc);
+    result = wglMakeCurrent(hdc, hrc);
+    assert(result);
 
-  // Get OpenGL extesions (shader for example..)
-  // wgl extension
-  wglCreateContextAttribsARB = GetAnyGLFuncAddress("wglCreateContextAttribsARB");
-  wglChoosePixelFormatARB = GetAnyGLFuncAddress("wglChoosePixelFormatARB");
+    // Get OpenGL extesions (shader for example..)
+    // wgl extension
+    wglCreateContextAttribsARB = GetAnyGLFuncAddress("wglCreateContextAttribsARB");
+    wglChoosePixelFormatARB = GetAnyGLFuncAddress("wglChoosePixelFormatARB");
 
-  // OPEN_GL_1_5
-  glGenBuffers = GetAnyGLFuncAddress("glGenBuffers");
+    // OPEN_GL_1_5
+    glGenBuffers = GetAnyGLFuncAddress("glGenBuffers");
 
-  // GL_VERSION_2_0
-  glCreateShader  = GetAnyGLFuncAddress("glCreateShader");
-  glShaderSource  = GetAnyGLFuncAddress("glShaderSource");
-  glCompileShader = GetAnyGLFuncAddress("glCompileShader");
-  glGetShaderiv   = GetAnyGLFuncAddress("glGetShaderiv");
-  glCreateProgram = GetAnyGLFuncAddress("glCreateProgram");
-  glAttachShader  = GetAnyGLFuncAddress("glAttachShader");
-  glLinkProgram   = GetAnyGLFuncAddress("glLinkProgram");
-  glGetProgramiv  = GetAnyGLFuncAddress("glGetProgramiv");
-  glUseProgram    = GetAnyGLFuncAddress("glUseProgram");
-  glDeleteProgram = GetAnyGLFuncAddress("glDeleteProgram");
-  glGetProgramInfoLog = GetAnyGLFuncAddress("glGetProgramInfoLog");
-  glGetShaderInfoLog = GetAnyGLFuncAddress("glGetShaderInfoLog");
-  glEnableVertexAttribArray = GetAnyGLFuncAddress("glEnableVertexAttribArray");
-  glVertexAttribPointer = GetAnyGLFuncAddress("glVertexAttribPointer");
-  glVertexAttribIPointer = GetAnyGLFuncAddress("glVertexAttribIPointer");
-  glBindBuffer = GetAnyGLFuncAddress("glBindBuffer");
-  glDisableVertexAttribArray = GetAnyGLFuncAddress("glDisableVertexAttribArray");
-  glBufferData = GetAnyGLFuncAddress("glBufferData");
-  glBufferSubData = GetAnyGLFuncAddress("glBufferSubData");
-  glUniform3fv = GetAnyGLFuncAddress("glUniform3fv");
-  glUniform2f = GetAnyGLFuncAddress("glUniform2f");
-  glUniform1iv = GetAnyGLFuncAddress("glUniform1iv");
-  glGetUniformLocation = GetAnyGLFuncAddress("glGetUniformLocation");
-  glDeleteShader = GetAnyGLFuncAddress("glDeleteShader");
-  glBindAttribLocation = GetAnyGLFuncAddress("glBindAttribLocation");
-  glUniformMatrix4fv = GetAnyGLFuncAddress("glUniformMatrix4fv");
-  glUniform1i = GetAnyGLFuncAddress("glUniform1i");
-  glActiveTexture = GetAnyGLFuncAddress("glActiveTexture");
-  glBlendEquationSeparate = GetAnyGLFuncAddress("glBlendEquationSeparate");
-  glBlendFuncSeparate = GetAnyGLFuncAddress("glBlendFuncSeparate");
-  glDrawArraysInstanced = GetAnyGLFuncAddress("glDrawArraysInstanced");
-  glGetStringi = GetAnyGLFuncAddress("glGetStringi");
-  glGetStringi = GetAnyGLFuncAddress("glGetStringi");
+    // GL_VERSION_2_0
+    glCreateShader    = GetAnyGLFuncAddress("glCreateShader");
+    glShaderSource    = GetAnyGLFuncAddress("glShaderSource");
+    glCompileShader = GetAnyGLFuncAddress("glCompileShader");
+    glGetShaderiv     = GetAnyGLFuncAddress("glGetShaderiv");
+    glCreateProgram = GetAnyGLFuncAddress("glCreateProgram");
+    glAttachShader    = GetAnyGLFuncAddress("glAttachShader");
+    glLinkProgram     = GetAnyGLFuncAddress("glLinkProgram");
+    glGetProgramiv    = GetAnyGLFuncAddress("glGetProgramiv");
+    glUseProgram        = GetAnyGLFuncAddress("glUseProgram");
+    glDeleteProgram = GetAnyGLFuncAddress("glDeleteProgram");
+    glGetProgramInfoLog = GetAnyGLFuncAddress("glGetProgramInfoLog");
+    glGetShaderInfoLog = GetAnyGLFuncAddress("glGetShaderInfoLog");
+    glEnableVertexAttribArray = GetAnyGLFuncAddress("glEnableVertexAttribArray");
+    glVertexAttribPointer = GetAnyGLFuncAddress("glVertexAttribPointer");
+    glVertexAttribIPointer = GetAnyGLFuncAddress("glVertexAttribIPointer");
+    glBindBuffer = GetAnyGLFuncAddress("glBindBuffer");
+    glDisableVertexAttribArray = GetAnyGLFuncAddress("glDisableVertexAttribArray");
+    glBufferData = GetAnyGLFuncAddress("glBufferData");
+    glBufferSubData = GetAnyGLFuncAddress("glBufferSubData");
+    glUniform3fv = GetAnyGLFuncAddress("glUniform3fv");
+    glUniform2f = GetAnyGLFuncAddress("glUniform2f");
+    glUniform1iv = GetAnyGLFuncAddress("glUniform1iv");
+    glGetUniformLocation = GetAnyGLFuncAddress("glGetUniformLocation");
+    glDeleteShader = GetAnyGLFuncAddress("glDeleteShader");
+    glBindAttribLocation = GetAnyGLFuncAddress("glBindAttribLocation");
+    glUniformMatrix4fv = GetAnyGLFuncAddress("glUniformMatrix4fv");
+    glUniform1i = GetAnyGLFuncAddress("glUniform1i");
+    glActiveTexture = GetAnyGLFuncAddress("glActiveTexture");
+    glBlendEquationSeparate = GetAnyGLFuncAddress("glBlendEquationSeparate");
+    glBlendFuncSeparate = GetAnyGLFuncAddress("glBlendFuncSeparate");
+    glDrawArraysInstanced = GetAnyGLFuncAddress("glDrawArraysInstanced");
+    glGetStringi = GetAnyGLFuncAddress("glGetStringi");
+    glGetStringi = GetAnyGLFuncAddress("glGetStringi");
+    //glBindTextureUnit = GetAnyGLFuncAddress("glBindTextureUnit");
+    //glDrawElements = GetAnyGLFuncAddress("glDrawElements");
+    glGenVertexArrays = GetAnyGLFuncAddress("glGenVertexArrays");
+    glBindVertexArray = GetAnyGLFuncAddress("glBindVertexArray");
 
-  //glBindTextureUnit = GetAnyGLFuncAddress("glBindTextureUnit");
-
-  //glDrawElements = GetAnyGLFuncAddress("glDrawElements");
-
-
-  glGenVertexArrays = GetAnyGLFuncAddress("glGenVertexArrays");
-  glBindVertexArray = GetAnyGLFuncAddress("glBindVertexArray");
-
-  wglDeleteContext(hrc);
-  ReleaseDC(dummy_window, hdc);
-  DestroyWindow(dummy_window);
+    wglDeleteContext(hrc);
+    ReleaseDC(dummy_window, hdc);
+    DestroyWindow(dummy_window);
 }
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine, int nCmdShow){
 
-  //Create Console
-  if(!AttachConsole(ATTACH_PARENT_PROCESS))
-    AllocConsole();
+    //Create Console
+    if(!AttachConsole(ATTACH_PARENT_PROCESS))
+        AllocConsole();
 
-  // Make stdio stream functions work on new console on window apps!
-  FILE *fpstdin = stdin, *fpstdout = stdout, *fpstderr = stderr;
-  freopen_s(&fpstdin, "CONIN$", "r", stdin);
-  freopen_s(&fpstdout, "CONOUT$", "w", stdout);
-  freopen_s(&fpstderr, "CONOUT$", "w", stderr);
+    // Make stdio stream functions work on new console on window apps!
+    FILE *fpstdin = stdin, *fpstdout = stdout, *fpstderr = stderr;
+    freopen_s(&fpstdin, "CONIN$", "r", stdin);
+    freopen_s(&fpstdout, "CONOUT$", "w", stdout);
+    freopen_s(&fpstderr, "CONOUT$", "w", stderr);
 
-  LoadOpenGLFunctions();
+    LoadOpenGLFunctions();
 
-  // Register the window class.
+    // Register the window class.
 
-  WNDCLASS win_class = {0};
-  win_class.lpfnWndProc   = WindowProc;
-  win_class.hInstance     = hInstance;
-  win_class.lpszClassName = "Engine Window Class";
-  win_class.hCursor = LoadCursorA(NULL, IDC_ARROW);
+    WNDCLASS win_class = {0};
+    win_class.lpfnWndProc   = WindowProc;
+    win_class.hInstance     = hInstance;
+    win_class.lpszClassName = "Engine Window Class";
+    win_class.hCursor = LoadCursorA(NULL, IDC_ARROW);
 
-  RegisterClass(&win_class);
+    RegisterClass(&win_class);
 
-  // Create the window.
-  const i32 styles = WS_OVERLAPPEDWINDOW ^ WS_THICKFRAME ^ WS_MAXIMIZEBOX;
+    // Create the window.
+    const i32 styles = WS_OVERLAPPEDWINDOW ^ WS_THICKFRAME ^ WS_MAXIMIZEBOX;
 
-  RECT rect = {0, 0, WWIDTH, WHEIGHT};
-  AdjustWindowRectEx(&rect, styles, false, 0);
+    RECT rect = {0, 0, WWIDTH, WHEIGHT};
+    AdjustWindowRectEx(&rect, styles, false, 0);
 
-  HWND window = CreateWindowEx(
-    0,
-    win_class.lpszClassName, // Window class
-    "Engine",   // Window text
-    styles,     // Window style
-    CW_USEDEFAULT, CW_USEDEFAULT, rect.right - rect.left, rect.bottom - rect.top, // Size and position
-    NULL,       // Parent window
-    NULL,       // Menu
-    hInstance,  // Instance handle
-    NULL        // Additional application data
-  );
+    HWND window = CreateWindowEx(
+        0,
+        win_class.lpszClassName, // Window class
+        "Engine",  // Window text
+        styles,    // Window style
+        CW_USEDEFAULT, CW_USEDEFAULT, rect.right - rect.left, rect.bottom - rect.top, // Size and position
+        NULL,      // Parent window
+        NULL,      // Menu
+        hInstance, // Instance handle
+        NULL       // Additional application data
+    );
 
-  HDC hdc = GetDC(window);
+    HDC hdc = GetDC(window);
 
-  int pixel_format_attribs[] = {
-      WGL_DRAW_TO_WINDOW_ARB, GL_TRUE,
-      WGL_SUPPORT_OPENGL_ARB, GL_TRUE,
-      WGL_DOUBLE_BUFFER_ARB,  GL_TRUE,
-      WGL_ACCELERATION_ARB,   WGL_FULL_ACCELERATION_ARB,
-      WGL_PIXEL_TYPE_ARB,     WGL_TYPE_RGBA_ARB,
-      WGL_COLOR_BITS_ARB,     32,
-      WGL_DEPTH_BITS_ARB,     24,
-      WGL_STENCIL_BITS_ARB,   8,
-      0
-  };
+    int pixel_format_attribs[] = {
+            WGL_DRAW_TO_WINDOW_ARB, GL_TRUE,
+            WGL_SUPPORT_OPENGL_ARB, GL_TRUE,
+            WGL_DOUBLE_BUFFER_ARB,  GL_TRUE,
+            WGL_ACCELERATION_ARB,   WGL_FULL_ACCELERATION_ARB,
+            WGL_PIXEL_TYPE_ARB,     WGL_TYPE_RGBA_ARB,
+            WGL_COLOR_BITS_ARB,     32,
+            WGL_DEPTH_BITS_ARB,     24,
+            WGL_STENCIL_BITS_ARB,   8,
+            0
+    };
 
-  i32 result;
-  i32 pixel_format_wgl;
-  u32 num_formats;
-  wglChoosePixelFormatARB(hdc, pixel_format_attribs, 0, 1, &pixel_format_wgl, &num_formats);
-  assert(num_formats);
+    i32 result;
+    i32 pixel_format_wgl;
+    u32 num_formats;
+    wglChoosePixelFormatARB(hdc, pixel_format_attribs, 0, 1, &pixel_format_wgl, &num_formats);
+    assert(num_formats);
 
-  PIXELFORMATDESCRIPTOR suggested_pixel_format;
-  DescribePixelFormat(hdc, pixel_format_wgl, sizeof(suggested_pixel_format), &suggested_pixel_format);
-  result = SetPixelFormat(hdc, pixel_format_wgl, &suggested_pixel_format);
-  assert(result);
+    PIXELFORMATDESCRIPTOR suggested_pixel_format;
+    DescribePixelFormat(hdc, pixel_format_wgl, sizeof(suggested_pixel_format), &suggested_pixel_format);
+    result = SetPixelFormat(hdc, pixel_format_wgl, &suggested_pixel_format);
+    assert(result);
 
-  const i32 attrib_list[] = {WGL_CONTEXT_MAJOR_VERSION_ARB, 3, WGL_CONTEXT_MINOR_VERSION_ARB, 3,
-                              WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB, 0}; // Only in version 3.2+, otherwise ignored!
-  // Add this if loading 3.2+ and using deprecated features: WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB
-  HGLRC hrc = wglCreateContextAttribsARB(hdc, NULL, attrib_list);
-  assert(hrc);
-  result = wglMakeCurrent(hdc, hrc);
-  assert(result);
+    const i32 attrib_list[] = {
+        WGL_CONTEXT_MAJOR_VERSION_ARB, 3, WGL_CONTEXT_MINOR_VERSION_ARB, 3,
+        WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB, 0 // Only in version 3.2+, otherwise ignored!
+    };
+    // Add this if loading 3.2+ and using deprecated features: WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB
+    HGLRC hrc = wglCreateContextAttribsARB(hdc, NULL, attrib_list);
+    assert(hrc);
+    result = wglMakeCurrent(hdc, hrc);
+    assert(result);
 
-  ReleaseDC(window, hdc);
-  ShowWindow(window, nCmdShow);
+    ReleaseDC(window, hdc);
+    ShowWindow(window, nCmdShow);
 
-  // Time things
-  TIMECAPS time_caps;
-  LARGE_INTEGER timer_start, timer_end, freq;
-  timeGetDevCaps(&time_caps, sizeof(time_caps));
-  QueryPerformanceFrequency(&freq);
-  assert(freq.QuadPart > 0);
+    // Time things
+    TIMECAPS time_caps;
+    LARGE_INTEGER timer_start, timer_end, freq;
+    timeGetDevCaps(&time_caps, sizeof(time_caps));
+    QueryPerformanceFrequency(&freq);
+    assert(freq.QuadPart > 0);
 
 //#ifdef DEBUG_BUILD
-  //u64 rng_seed = DebugGameSeed;
+    //u64 rng_seed = DebugGameSeed;
 //#else
-  QueryPerformanceCounter(&timer_start);
-  u64 rng_seed = timer_start.QuadPart;
+    QueryPerformanceCounter(&timer_start);
+    u64 rng_seed = timer_start.QuadPart;
 //#endif
 
-  EngineSetup(rng_seed);
+    EngineSetup(rng_seed);
 
-  MSG msg = {0};
-  timer_start.QuadPart = 0;
-  while(GameRunning){
-    LARGE_INTEGER old_start = timer_start;
-    QueryPerformanceCounter(&timer_start);
-    FramesPerSec = (u32)(1000 / (1000 * (timer_start.QuadPart - old_start.QuadPart) / freq.QuadPart));
+    MSG msg = {0};
+    timer_start.QuadPart = 0;
+    while(GameRunning){
+        LARGE_INTEGER old_start = timer_start;
+        QueryPerformanceCounter(&timer_start);
+        FramesPerSec = (u32)(1000 / (1000 * (timer_start.QuadPart - old_start.QuadPart) / freq.QuadPart));
 
-    while (PeekMessageA(&msg, 0, 0, 0, PM_REMOVE)){
-      TranslateMessage(&msg);
-      DispatchMessage(&msg);
+        while (PeekMessageA(&msg, 0, 0, 0, PM_REMOVE)){
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
+        }
+
+        if(!window_has_focus) EngineClearInput();
+
+        EngineUpdate();
+        EngineDraw();
+        EngineProcessInput(window_has_focus);
+        DrawBuffer(window);
+
+        QueryPerformanceCounter(&timer_end);
+        i32 ms_elapsed = 1000 * (i32)((timer_end.QuadPart - timer_start.QuadPart) / freq.QuadPart);
+        i32 time_left = TARGETFPS - ms_elapsed;
+
+        if(time_left > 0){
+            timeBeginPeriod(time_caps.wPeriodMin);
+            Sleep(time_left);
+            timeEndPeriod(time_caps.wPeriodMin);
+            ms_elapsed = TARGETFPS; // TODO Should i query again?
+        }
+        TimeElapsed = (f32)ms_elapsed / 1000.0f;
     }
 
-    if(!window_has_focus) EngineClearInput();
-
-    EngineUpdate();
-    EngineDraw();
-    EngineProcessInput(window_has_focus);
-    DrawBuffer(window);
-
-    QueryPerformanceCounter(&timer_end);
-    i32 ms_elapsed = 1000 * (i32)((timer_end.QuadPart - timer_start.QuadPart) / freq.QuadPart);
-    i32 time_left = TARGETFPS - ms_elapsed;
-
-    if(time_left > 0){
-      timeBeginPeriod(time_caps.wPeriodMin);
-      Sleep(time_left);
-      timeEndPeriod(time_caps.wPeriodMin);
-      ms_elapsed = TARGETFPS; // TODO Should i query again?
-    }
-    TimeElapsed = (f32)ms_elapsed / 1000.0f;
-  }
-
-  return 0;
+    return 0;
 }
 
 static inline void KeyInput(WPARAM key_code, LPARAM lParam, b32 state){
-  switch (key_code) {
-    case VK_LEFT:
-      Keyboard.left.state = state;
-      break;
-    case VK_RIGHT:
-      Keyboard.right.state = state;
-      break;
-    case VK_UP:
-      Keyboard.up.state = state;
-      break;
-    case VK_DOWN:
-      Keyboard.down.state = state;
-      break;
-    case VK_SPACE:
-      Keyboard.space_bar.state = state;
-      break;
-    case VK_BACK:
-      Keyboard.back_space.state = state;
-      break;
-    case VK_SHIFT:
-      Keyboard.shift.state = state;
-      break;
-    case VK_CONTROL:
-      Keyboard.ctrl.state = state;
-      break;
-    case VK_RETURN:
-      Keyboard.enter.state = state;
-      break;
-    case VK_OEM_PLUS:
-      Keyboard.add.state = state;
-      break;
-    case VK_OEM_MINUS:
-      Keyboard.sub.state = state;
-      break;
-    case VK_MULTIPLY:
-      Keyboard.mult.state = state;
-      break;
-    case VK_DIVIDE:
-      Keyboard.div.state = state;
-      break;
-    case VK_ESCAPE:
-      Keyboard.esc.state = state;
-      break;
-    case VK_F4:
-      if(lParam & 0x10000000){
-        GameRunning = 0;
-        PostQuitMessage(0);
-      }
-      break;
-  }
+    switch (key_code) {
+        case VK_LEFT:
+            Keyboard.left.state = state;
+            break;
+        case VK_RIGHT:
+            Keyboard.right.state = state;
+            break;
+        case VK_UP:
+            Keyboard.up.state = state;
+            break;
+        case VK_DOWN:
+            Keyboard.down.state = state;
+            break;
+        case VK_SPACE:
+            Keyboard.space_bar.state = state;
+            break;
+        case VK_BACK:
+            Keyboard.back_space.state = state;
+            break;
+        case VK_SHIFT:
+            Keyboard.shift.state = state;
+            break;
+        case VK_CONTROL:
+            Keyboard.ctrl.state = state;
+            break;
+        case VK_RETURN:
+            Keyboard.enter.state = state;
+            break;
+        case VK_OEM_PLUS:
+            Keyboard.add.state = state;
+            break;
+        case VK_OEM_MINUS:
+            Keyboard.sub.state = state;
+            break;
+        case VK_MULTIPLY:
+            Keyboard.mult.state = state;
+            break;
+        case VK_DIVIDE:
+            Keyboard.div.state = state;
+            break;
+        case VK_ESCAPE:
+            Keyboard.esc.state = state;
+            break;
+        case VK_F4:
+            if(lParam & 0x10000000){
+                GameRunning = 0;
+                PostQuitMessage(0);
+            }
+            break;
+    }
 
-  if(key_code >= 'A' && key_code <= 'Z'){
-    i32 index = (i32)key_code - 'A';
-    Key *k = &Keyboard.a + index;
-    k->state = state;
-    return;
-  }
+    if(key_code >= 'A' && key_code <= 'Z'){
+        i32 index = (i32)key_code - 'A';
+        Key *k = &Keyboard.a + index;
+        k->state = state;
+        return;
+    }
 
-  if(key_code >= '0' && key_code <= '9'){
-    i32 index = (i32)key_code - '0';
-    Key *k = &Keyboard.n0 + index;
-    k->state = state;
-    return;
-  }
+    if(key_code >= '0' && key_code <= '9'){
+        i32 index = (i32)key_code - '0';
+        Key *k = &Keyboard.n0 + index;
+        k->state = state;
+        return;
+    }
 }
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -367,33 +363,32 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         return 0;
 
     case WM_MOUSEMOVE: {
-          POINT mouse_pos;
-          GetCursorPos(&mouse_pos);
-          ScreenToClient(hwnd, &mouse_pos);
-          Mouse.x = mouse_pos.x;
-          Mouse.y = mouse_pos.y;
-          return 0;
+        POINT mouse_pos;
+        GetCursorPos(&mouse_pos);
+        ScreenToClient(hwnd, &mouse_pos);
+        Mouse.x = mouse_pos.x;
+        Mouse.y = mouse_pos.y;
+        return 0;
         }
-
     }
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
 char* os_read_whole_file(void* file, i32 *size){
-  HANDLE *_file = (HANDLE*)file;
-  u32 file_size = GetFileSize(_file, NULL);
-  char *buffer = VirtualAlloc(NULL, file_size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
-  DWORD read;
-  i32 result = ReadFile(_file, (void*)buffer, file_size, &read, NULL);
-  assert(result);
-  assert(read == file_size);
-  SetFilePointer(_file, 0, 0, FILE_BEGIN);
-  if(size) *size = file_size;
-  return buffer;
+    HANDLE *_file = (HANDLE*)file;
+    u32 file_size = GetFileSize(_file, NULL);
+    char *buffer = VirtualAlloc(NULL, file_size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+    DWORD read;
+    i32 result = ReadFile(_file, (void*)buffer, file_size, &read, NULL);
+    assert(result);
+    assert(read == file_size);
+    SetFilePointer(_file, 0, 0, FILE_BEGIN);
+    if(size) *size = file_size;
+    return buffer;
 }
 
 void FreeFile(void *mem){
-  VirtualFree(mem, 0, MEM_RELEASE);
+    VirtualFree(mem, 0, MEM_RELEASE);
 }
 
 void os_font_path(char *buffer, u32 size){

@@ -38,7 +38,8 @@ static i32 confirmation_prompt_cursor = 0;
 const Piece Line = {
     .side = 4,
     .type = 1,
-    .bitmap = {0, 0, 0, 0,
+    .bitmap = {
+        0, 0, 0, 0,
         1, 1, 1, 1,
         0, 0, 0, 0,
         0, 0, 0, 0}
@@ -47,14 +48,16 @@ const Piece Line = {
 const Piece Block = {
     .side = 2,
     .type = 2,
-    .bitmap = {1, 1,
+    .bitmap = {
+        1, 1,
         1, 1}
 };
 
 const Piece Piramid = {
     .side = 3,
     .type = 3,
-    .bitmap = {0, 1, 0,
+    .bitmap = {
+        0, 1, 0,
         1, 1, 1,
         0, 0, 0}
 };
@@ -62,7 +65,8 @@ const Piece Piramid = {
 const Piece LeftL = {
     .side = 3,
     .type = 4,
-    .bitmap = {1, 0, 0,
+    .bitmap = {
+        1, 0, 0,
         1, 1, 1,
         0, 0, 0,}
 };
@@ -70,7 +74,8 @@ const Piece LeftL = {
 const Piece RightL = {
     .side = 3,
     .type = 5,
-    .bitmap = {0, 0, 1,
+    .bitmap = {
+        0, 0, 1,
         1, 1, 1,
         0, 0, 0,}
 };
@@ -78,7 +83,8 @@ const Piece RightL = {
 const Piece LeftZ = {
     .side = 3,
     .type = 6,
-    .bitmap = {1, 1, 0,
+    .bitmap = {
+        1, 1, 0,
         0, 1, 1,
         0, 0, 0}
 };
@@ -86,7 +92,8 @@ const Piece LeftZ = {
 const Piece RightZ = {
     .side = 3,
     .type = 7,
-    .bitmap = {0, 1, 1,
+    .bitmap = {
+        0, 1, 1,
         1, 1, 0,
         0, 0, 0}
 };
@@ -106,13 +113,10 @@ const Vec4 PieceColors[] = {
 };
 
 i32 PieceIndex = 0;
-
 i32 Score = 0;
-
 i32 CountTicks = 0;
 b32 GameOver = false;
 b32 GamePause = false;
-
 
 struct{
     i32 x, y;
@@ -134,7 +138,6 @@ struct{
     b32 falling;
     i32 mode;
 }Debug = {.falling = true, .mode = none};
-
 
 typedef struct DebugMessage_S{
     Vec4 color;
@@ -309,7 +312,6 @@ void EngineInit(){
     os_font_path(font_path, array_size(font_path));
     result = strcat_s(font_path, array_size(font_path), "\\Arial.ttf") == 0;
     assert(result);
-    printf("font path: %s\n", font_path);
     
     load_font(font_path, 36, &BigFont);
     load_font(font_path, 20, &DefaultFont);

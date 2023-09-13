@@ -50,7 +50,7 @@ typedef u64       memptr;
 #define MAX(A, B) ((A) > (B)? (A) : (B))
 
 typedef struct{
-  f32 x, y;
+    f32 x, y;
 }Vec2;
 
 #define Vec2(X, Y) (Vec2){.x = (X), .y = (Y)}
@@ -61,14 +61,14 @@ typedef struct{
 #define DotVec2(A, B) ((A).x * (B).x + (A).y * (B).y)
 
 static inline Vec2 RotateVec2(Vec2 v, f32 angle){
-  Vec2 n;
-  n.x = v.x * cosf(angle) - v.y * sinf(angle);
-  n.y = v.y * cosf(angle) + v.x * sinf(angle);
-  return n;
+    Vec2 n;
+    n.x = v.x * cosf(angle) - v.y * sinf(angle);
+    n.y = v.y * cosf(angle) + v.x * sinf(angle);
+    return n;
 }
 
 typedef struct{
-  f32 x, y, z;
+    f32 x, y, z;
 }Vec3;
 
 #define Vec3(X, Y, Z) (Vec3){.x = (X), .y = (Y), .z = (Z)}
@@ -79,7 +79,7 @@ typedef struct{
 #define DotVec3(A, B) ((A).x * (B).x + (A).y * (B).y + (A).z * (B).z)
 
 typedef struct{
-  f32 x, y, z, w;
+    f32 x, y, z, w;
 }Vec4;
 
 #define Vec4(X, Y, Z, W) (Vec4){.x = (X), .y = (Y), .z = (Z), .w = (W)}
@@ -92,40 +92,40 @@ typedef struct{
 #define Rect(X, Y, W, H) (Rect){(X), (Y), (W), (H)}
 
 static inline f32 Abs(f32 v){
-  return v > 0? v : -v;
+    return v > 0? v : -v;
 }
 
 static inline f32 Approachf(f32 v, f32 step, f32 goal){
-  if(v > goal) return MAX(v - step, goal);
-  if(v < goal) return MIN(v + step, goal);
-  return goal;
+    if(v > goal) return MAX(v - step, goal);
+    if(v < goal) return MIN(v + step, goal);
+    return goal;
 }
 
 static inline i32 Signi(i32 value){
-  if(value > 0) return 1;
-  if(value < 0) return -1;
-  return 0;
+    if(value > 0) return 1;
+    if(value < 0) return -1;
+    return 0;
 }
 
 static inline f32 Signf(f32 value){
-  if(value > 0.0f) return 1.0f;
-  if(value < 0.0f) return -1.0f;
-  return 0.0f;
+    if(value > 0.0f) return 1.0f;
+    if(value < 0.0f) return -1.0f;
+    return 0.0f;
 }
 
 static inline void set_zero(void *mem, size_t size){
-  u8 *block = (u8*)mem;
-  for(size_t i = 0; i < size; i++){
-    block[i] = 0;
-  }
+    u8 *block = (u8*)mem;
+    for(size_t i = 0; i < size; i++){
+        block[i] = 0;
+    }
 }
 
 static inline b32 BoxToBoxCollision(Rect a, Rect b){
-  return ((a.x < b.x + b.w) && (a.x + a.w > b.x) && (a.y < b.y + b.h) && (a.y + a.h > b.y));
+    return ((a.x < b.x + b.w) && (a.x + a.w > b.x) && (a.y < b.y + b.h) && (a.y + a.h > b.y));
 }
 
 static inline b32 PointToBoxCollision(Vec2 p, Rect b){
-  return (p.x > b.x && p.x < b.x + b.w && p.y > b.y && p.y < b.y + b.h);
+    return (p.x > b.x && p.x < b.x + b.w && p.y > b.y && p.y < b.y + b.h);
 }
 
 #define Center(IW, CW, CX) ((CW) - (IW)) / 2 + (CX)
@@ -140,25 +140,25 @@ static inline b32 PointToBoxCollision(Vec2 p, Rect b){
 // ===================================================================
 
 typedef union{
-  u32 u;
-  u8 channel[4];
-  struct{
-    u8 a, b, g, r;
-  };
+    u32 u;
+    u8 channel[4];
+    struct{
+        u8 a, b, g, r;
+    };
 }Color;
 
 #define Color(R, G, B, A) {.channel = {(A)*255, (R)*255, (G)*255, (B)*255}}
 
 typedef struct{
-  i32 x, y;
-  u8* buffer;
+    i32 x, y;
+    u8* buffer;
 }Bitmap;
 
 
 // TODO new functions to be propely implemented
 static f32 cubic_function(f32 x){
-  float a = -2 * x + 2;
-  return x < 0.5 ? 4 * x * x * x : 1 - a * a * a / 2;
+    float a = -2 * x + 2;
+    return x < 0.5 ? 4 * x * x * x : 1 - a * a * a / 2;
 }
 
 // ===================================================================
@@ -192,19 +192,19 @@ u32 Random(void) {
 }
 
 i32 random_in(i32 a, i32 b){
-  i32 len = abs(a - b) + 1;
-  return a + Random() % len;
+    i32 len = abs(a - b) + 1;
+    return a + Random() % len;
 }
 
 u32 random_n(u32 max){
-  return Random() % (max + 1);
+    return Random() % (max + 1);
 }
 
 u64 Random64(){
-  u64 z = (RNGseed64 += UINT64_C(0x9E3779B97F4A7C15));
-  z = (z ^ (z >> 30)) * UINT64_C(0xBF58476D1CE4E5B9);
-  z = (z ^ (z >> 27)) * UINT64_C(0x94D049BB133111EB);
-  return z ^ (z >> 31);
+    u64 z = (RNGseed64 += UINT64_C(0x9E3779B97F4A7C15));
+    z = (z ^ (z >> 30)) * UINT64_C(0xBF58476D1CE4E5B9);
+    z = (z ^ (z >> 27)) * UINT64_C(0x94D049BB133111EB);
+    return z ^ (z >> 31);
 }
 
 #endif
@@ -214,14 +214,14 @@ u64 Random64(){
 // ===================================================================
 
 static i32 BinaryToDecimal(char *string, i32 size){
-  i32 value = 0;
-  i32 pow = 1;
-  for(i32 i = size - 1; i >= 0; i--){
-    assert(string[i] == '0' || string[i] == '1');
-    value += (string[i] - '0') * pow;
-    pow *= 2;
-  }
-  return value;
+    i32 value = 0;
+    i32 pow = 1;
+    for(i32 i = size - 1; i >= 0; i--){
+        assert(string[i] == '0' || string[i] == '1');
+        value += (string[i] - '0') * pow;
+        pow *= 2;
+    }
+    return value;
 }
 
 // ===================================================================
@@ -230,35 +230,35 @@ static i32 BinaryToDecimal(char *string, i32 size){
 
 static char* LoadFileToMemCRT(char* filename, int* file_size){
 
-  FILE* fp = fopen(filename, "rb");
+    FILE* fp = fopen(filename, "rb");
 
-  if (fp == NULL) {
-    fprintf(stderr, "Unable to open %s\n", filename);
+    if (fp == NULL) {
+        fprintf(stderr, "Unable to open %s\n", filename);
+        fclose(fp);
+        return NULL;
+    }
+
+    fseek(fp, 0, SEEK_END);
+    *file_size = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+
+    char* file_contents = (char*)malloc(*file_size+1);
+    if (file_contents == NULL) {
+        fprintf(stderr, "Memory error: unable to allocate %d bytes\n", *file_size+1);
+        return NULL;
+    }
+
+    if (fread(file_contents, *file_size, 1, fp) != 1 ){
+        fprintf(stderr, "Unable to read content of %s\n", filename);
+        fclose(fp);
+        free(file_contents);
+        return NULL;
+    }
+
     fclose(fp);
-    return NULL;
-  }
+    *(file_contents + *file_size) = 0;
 
-  fseek(fp, 0, SEEK_END);
-  *file_size = ftell(fp);
-  fseek(fp, 0, SEEK_SET);
-
-  char* file_contents = (char*)malloc(*file_size+1);
-  if (file_contents == NULL) {
-    fprintf(stderr, "Memory error: unable to allocate %d bytes\n", *file_size+1);
-    return NULL;
-  }
-
-  if (fread(file_contents, *file_size, 1, fp) != 1 ){
-    fprintf(stderr, "Unable to read content of %s\n", filename);
-    fclose(fp);
-    free(file_contents);
-    return NULL;
-  }
-
-  fclose(fp);
-  *(file_contents + *file_size) = 0;
-
-  return file_contents;
+    return file_contents;
 }
 
 #endif
