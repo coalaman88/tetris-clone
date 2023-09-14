@@ -144,6 +144,8 @@ void main_menu(void){
 void update_scoreboard(i32 score, i32 placement){
     if(placement > HighScore.count){
         assert(placement == HighScore.count + 1);
+        if(placement >= array_size(HighScore.score))
+            return;
         HighScore.count = placement;
     }
 
@@ -190,7 +192,7 @@ void highscore_menu(void){
         const f32 spacing_y = (f32)CurrentFont->line_height * 1.1f;
         f32 y_pen = 0;
 
-        draw_centered_text(x, y + spacing_y * y_pen++, Blue_v4, "-ScoreInfo Scoreboard-");
+        draw_centered_text(x, y + spacing_y * y_pen++, Blue_v4, "-Scoreboard-");
 
         if(KeyPressed(Keyboard.enter) && state->insert_mode_on){
             if(strcmp(state->new_name.buffer, "_") != 0){
@@ -223,7 +225,8 @@ void highscore_menu(void){
         if(HighScore.count > 0){
             ScoreInfo *b = HighScore.score;
             for(i32 i = 0; i < HighScore.count; i++){
-                const char *name = state->insert_mode_on? state->new_name.buffer : b[0].name;
+                b32 is_inserting = state->insert_mode_on && i == state->insert_board_index;
+                const char *name = is_inserting? state->new_name.buffer : b[0].name;
                 draw_centered_text(x, y + spacing_y * y_pen++, White_v4, "%d# %s %02d/%02d/%d %d",
                     i + 1, name, b[0].month, b[0].day, b[0].year, b[0].score);
             }
@@ -247,7 +250,7 @@ void settings_menu(void){
 }
 
 void pause_menu(void){
-    const i32 max_y = 2;
+    const i32 max_y = 3;
     move_cursor(&pause_cursor_y, max_y);
 
     if(KeyPressed(Keyboard.esc)){
@@ -259,7 +262,8 @@ void pause_menu(void){
         switch(pause_cursor_y){
             case 0: open_menu(S_Settings); break; // settings menu
             case 1: close_menu(); break; // resume game
-            case 2: GameRunning = false; break; // exit game
+            case 2: open_menu(S_Highscore); break; // scoreboard
+            case 3: GameRunning = false; break; // exit game
             default: assert(false);
         }
     }
