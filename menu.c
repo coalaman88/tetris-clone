@@ -108,11 +108,12 @@ void main_menu(void){
         const f32 spacing_y = (f32)CurrentFont->line_height * 1.1f;
         const Vec4 grey = brightness(White_v4, 0.3f);
         f32 y_pen = 0;
-        draw_centered_text(x, y + spacing_y * y_pen++, Yellow_v4, "Tetris");
-        draw_centered_text(x, y + spacing_y * y_pen++, main_cursor_y == y_pen - 1? White_v4 : grey, "Start Game");
-        draw_centered_text(x, y + spacing_y * y_pen++, main_cursor_y == y_pen - 1? White_v4 : grey, "ScoreInfo Scoreboard");
-        draw_centered_text(x, y + spacing_y * y_pen++, main_cursor_y == y_pen - 1? White_v4 : grey, "Settings");
-        draw_centered_text(x, y + spacing_y * y_pen++, main_cursor_y == y_pen - 1? White_v4 : grey, "Exit");
+        i32 cursor_y = main_cursor_y;
+        draw_centered_text(x, y + spacing_y * y_pen, Yellow_v4, "Tetris"); y_pen++;
+        draw_centered_text(x, y + spacing_y * y_pen, cursor_y == y_pen - 1? White_v4 : grey, "Start Game"); y_pen++;
+        draw_centered_text(x, y + spacing_y * y_pen, cursor_y == y_pen - 1? White_v4 : grey, "Scoreboard"); y_pen++;
+        draw_centered_text(x, y + spacing_y * y_pen, cursor_y == y_pen - 1? White_v4 : grey, "Settings"); y_pen++;
+        draw_centered_text(x, y + spacing_y * y_pen, cursor_y == y_pen - 1? White_v4 : grey, "Exit"); y_pen++;
     }
 }
 
@@ -246,10 +247,12 @@ void pause_menu(void){
         const f32 spacing_y = (f32)CurrentFont->line_height * 1.1f;
         const Vec4 grey = brightness(White_v4, 0.3f);
         f32 y_pen = 0;
-        draw_centered_text(x, y + spacing_y * y_pen++, Green_v4, "Pause");
-        draw_centered_text(x, y + spacing_y * y_pen++, pause_cursor_y == y_pen - 1? White_v4 : grey, "Settings");
-        draw_centered_text(x, y + spacing_y * y_pen++, pause_cursor_y == y_pen - 1? White_v4 : grey, "Resume");
-        draw_centered_text(x, y + spacing_y * y_pen++, pause_cursor_y == y_pen - 1? Red_v4 : brightness(Red_v4, 0.8f), "Exit Game");
+        i32 cursor_y = pause_cursor_y;
+        draw_centered_text(x, y + spacing_y * y_pen, Green_v4, "Pause"); y_pen++;
+        draw_centered_text(x, y + spacing_y * y_pen, cursor_y == y_pen - 1? White_v4 : grey, "Settings"); y_pen++;
+        draw_centered_text(x, y + spacing_y * y_pen, cursor_y == y_pen - 1? White_v4 : grey, "Resume"); y_pen++;
+        draw_centered_text(x, y + spacing_y * y_pen, cursor_y == y_pen - 1? White_v4 : grey, "Scoreboard"); y_pen++;
+        draw_centered_text(x, y + spacing_y * y_pen, cursor_y == y_pen - 1? Red_v4 : brightness(Red_v4, 0.8f), "Exit Game"); y_pen++;
     }
 }
 
