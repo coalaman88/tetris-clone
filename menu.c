@@ -18,27 +18,51 @@ b32 load_highscore_from_disk(const char *file_name, Scoreboard *scoreboard){
     if(!file){
         return false;
     }
-
-    size_t read = fread(scoreboard, sizeof(Scoreboard), 1, file);
-    fclose(file);
+    
+    char version[SCOREBOARD_FILE_VERSION_SIZE + 1];
+    size_t read = fread(version, SCOREBOARD_FILE_VERSION_SIZE, 1, file);
+    version[sizeof(version) - 1] = 0;
 
     if(read < 1){
-        // TODO handle this..
-        assert(false);
+        enqueue_message(Red_v4, "unable to read highscore file!");
+        fclose(file);
         return false;
     }
 
+    if(strcmp(version, SCOREBOARD_FILE_VERSION) != 0){
+        enqueue_message(Red_v4, "highscore data with different version! %s", version);
+        fclose(file);
+        return false;
+    }
+
+    Scoreboard temp_scoreboard = {0};
+    read = fread(&temp_scoreboard, sizeof(Scoreboard), 1, file);
+    fclose(file);
+    if(read < 1){
+        enqueue_message(Red_v4, "unable to read highscore file!");
+        return false;
+    }
+
+    *scoreboard = temp_scoreboard;
     return true;
 }
 
-b32 save_highscore_to_disk(const char *file_name, const Scoreboard *scoreboard){
+b32 save_highscore_to_disk(const char *file_name, Scoreboard *scoreboard){
     // TODO backup
     FILE *file = fopen(file_name, "w+b");
     if(!file){
         return false;
     }
+    size_t written;
+    
+    written = fwrite(SCOREBOARD_FILE_VERSION, SCOREBOARD_FILE_VERSION_SIZE, 1, file);
+    if(written < 1){
+        // TODO handle this..
+        assert(false);
+        return false;
+    }
 
-    size_t written = fwrite(scoreboard, sizeof(Scoreboard), 1, file);
+    written = fwrite(scoreboard, sizeof(Scoreboard), 1, file);
     fclose(file);
 
     if(written < 1){

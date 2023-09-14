@@ -149,7 +149,7 @@ struct DebugMessageQueue_S{
     i32 time;
     i32 messages_time;
     DebugMessage messages[10];
-}DebugMessageQueue = {.start = 0, .end = 0, .time = 0, .messages_time = 60};
+}DebugMessageQueue = {.start = 0, .end = 0, .time = 0, .messages_time = 120};
 
 void update_messages(void){
     struct DebugMessageQueue_S *log = &DebugMessageQueue;
@@ -166,7 +166,7 @@ void update_messages(void){
 
     for(i32 i = log->start; i != log->end; i = ++i % array_size(log->messages)){
         DebugMessage *m = &log->messages[i];
-        draw_text(WWIDTH * 2 / 3, WHEIGHT - offset - 6.0f, m->color, m->content);
+        draw_text(0, WHEIGHT - offset - 6.0f, m->color, m->content);
         offset += spacing;
     }
 }
@@ -289,12 +289,11 @@ i32 pop_stack(Stack *stack){
 }
 
 b32 highscore_placement(i32 score, const Scoreboard *board){
-    if(board->count <= 0) return 1;
     for(i32 i = 0; i < board->count; i++){
         if(score > board->score[i].score)
             return i + 1;
     }
-    return 0;
+    return board->count + 1;
 }
 
 // TODO list
