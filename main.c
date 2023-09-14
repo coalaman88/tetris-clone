@@ -25,7 +25,7 @@ i32 Grid[GridH][GridW] = {0};
 i32 PieceStatistics[array_size(Pieces)] = {0};
 Scoreboard HighScore;
 
-const char HighScoreFileName[] = "highscore.dat";
+const char *HighScoreFileName = "highscore.dat";
 
 const i32 BlinkTile = 200;
 
@@ -288,6 +288,15 @@ i32 pop_stack(Stack *stack){
     return stack->buffer[stack->size];
 }
 
+b32 highscore_placement(i32 score, const Scoreboard *board){
+    if(board->count <= 0) return 1;
+    for(i32 i = 0; i < board->count; i++){
+        if(score > board->score[i].score)
+            return i + 1;
+    }
+    return 0;
+}
+
 // TODO list
 // # Macro stuff
 // High score db
@@ -323,6 +332,8 @@ void EngineInit(void){
     if(!result){
         set_zero(&HighScore, sizeof(HighScore));
     }
+
+    Score = 1000; // Debug
 }
 
 static inline Vec4 invert_color(Vec4 color){
@@ -607,6 +618,7 @@ void prompt(void){
             enqueue_message(Green_v4, "Restarted!");
         }
         GameMode = GM_Running;
+        confirmation_prompt_cursor = false;
     }
 
     draw_scene();
@@ -634,6 +646,8 @@ void game_running(void){
         load_grid();
         restart_game(false);
     }
+    if(Keyboard.ctrl.state && KeyPressed(Keyboard.g))
+        GameOver = true;
 
     // @Temp Force save scoreboard
     if(KeyPressed(Keyboard.h)){
@@ -648,7 +662,7 @@ void game_running(void){
 
     // Reset game
     if(KeyPressed(Keyboard.o)){
-        confirmation_prompt_open = !confirmation_prompt_open;
+        confirmation_prompt_open = false;
         GameMode = GM_Prompt;
         return; // FIXME skipping a drawing frame!!!
     }
@@ -656,7 +670,13 @@ void game_running(void){
     // Pause game
     if(KeyPressed(Keyboard.enter) && !confirmation_prompt_open){
         if(GameOver){
-            restart_game(true);
+            i32 placement = highscore_placement(Score, &HighScore);
+            if(placement > 0){
+                update_scoreboard(Score, placement);
+                init_highscore_menu_in_insert_mode(placement);
+            } else {
+                restart_game(true);
+            }
         } else {
             GamePause = !GamePause;
         }

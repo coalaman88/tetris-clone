@@ -3,6 +3,8 @@
 #include "draw.h"
 #include "util.h"
 
+#include <string.h> // @Remove
+
 static i32 MenuScreen = S_Main;
 static i32 original_mode;
 static i32 menu_stack[10]; // max sub menu depth
@@ -114,12 +116,46 @@ void main_menu(void){
     }
 }
 
+void update_scoreboard(i32 score, i32 placement){
+    if(placement > HighScore.count){
+        assert(placement == HighScore.count + 1);
+        HighScore.count = placement;
+    }
+
+    ScoreInfo *info = &HighScore.score[placement - 1];
+    // FIXME
+    info->day   = 1;
+    info->month = 1;
+    info->year  = 1999;
+    info->score = score;
+    set_zero(info->name, sizeof(info->name));
+}
+
+struct S_HighScoreMenuState{
+    b32 insert_mode_on;
+    i32 insert_board_index;
+    struct {
+        char buffer[6];
+        i32 count;
+    }new_name;
+} HighScoreMenuState;
+
+void init_highscore_menu_in_insert_mode(i32 board_position){
+    struct S_HighScoreMenuState *state = &HighScoreMenuState;
+    const char start_name[] = "_";
+    state->insert_mode_on = true;
+    state->insert_board_index = board_position - 1;
+    strcpy_s(state->new_name.buffer, array_size(state->new_name.buffer), start_name);
+    open_menu(S_Highscore);
+}
 
 void highscore_menu(void){
     // TODO
     // Option to clear highscore from game
+
+    struct S_HighScoreMenuState *state = &HighScoreMenuState;
     
-    if(KeyPressed(Keyboard.esc))
+    if(KeyPressed(Keyboard.esc) && !state->insert_mode_on)
         close_menu();
 
     // draw
@@ -131,11 +167,40 @@ void highscore_menu(void){
 
         draw_centered_text(x, y + spacing_y * y_pen++, Blue_v4, "-ScoreInfo Scoreboard-");
 
+        if(KeyPressed(Keyboard.enter) && state->insert_mode_on){
+            if(strcmp(state->new_name.buffer, "_") != 0){
+                ScoreInfo *info = &HighScore.score[state->insert_board_index];
+                strcpy_s(info->name, array_size(info->name), state->new_name.buffer);
+                save_highscore_to_disk(HighScoreFileName, &HighScore);
+                state->insert_mode_on = false;
+                set_zero(&state->new_name, sizeof(state->new_name));
+                close_menu();
+                restart_game(true);
+            }
+        }
+
+        if(state->insert_mode_on){
+            if(state->new_name.count < array_size(state->new_name.buffer) - 1){
+                for(i32 i = 0; i < 'z' - 'a'; i++){
+                    if(KeyPressed(Keyboard.keys[i])){
+                        state->new_name.buffer[state->new_name.count++] = 'a' + (char)i;
+                        break;
+                    }
+                }
+            }
+
+            if(KeyPressed(Keyboard.back_space) && state->new_name.count > 0){
+                i32 i = --state->new_name.count;
+                state->new_name.buffer[i] = 0;
+            }
+        }
+
         if(HighScore.count > 0){
             ScoreInfo *b = HighScore.score;
             for(i32 i = 0; i < HighScore.count; i++){
+                const char *name = state->insert_mode_on? state->new_name.buffer : b[0].name;
                 draw_centered_text(x, y + spacing_y * y_pen++, White_v4, "%d# %s %02d/%02d/%d %d",
-                i + 1, b[0].name, b[0].month, b[0].day, b[0].year, b[0].score);
+                    i + 1, name, b[0].month, b[0].day, b[0].year, b[0].score);
             }
         } else {
                 y_pen++;
