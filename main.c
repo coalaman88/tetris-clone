@@ -392,7 +392,7 @@ void draw_background(i32 t_x, i32 t_y){
 
 void draw_grid(i32 t_x, i32 t_y){
     const i32 tetris_line_start = GapeQueue.buffer[0];
-    const i32 tetris_line_end   = GapeQueue.buffer[GapeQueue.count - 1];
+    const i32 tetris_line_end   = GapeQueue.buffer[MAX(GapeQueue.count - 1, 0)];
 
     const i32 t_x2 = t_x - 1;
     const i32 t_y2 = t_y - 1;
