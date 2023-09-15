@@ -141,16 +141,20 @@ void main_menu(void){
     }
 }
 
-void update_scoreboard(i32 score, i32 placement){
-    if(placement > HighScore.count){
-        assert(placement == HighScore.count + 1);
-        if(placement >= array_size(HighScore.score))
-            return;
-        HighScore.count = placement;
+void insert_in_scoreboard(i32 score, i32 placement){
+    assert(placement <= array_size(HighScore.score));
+    if(HighScore.count < array_size(HighScore.score))
+        HighScore.count++;
+    assert(placement <= HighScore.count);
+
+    i32 insert_pos = placement - 1;
+    i32 last_slot = HighScore.count - 1;
+    for(i32 i = last_slot - 1; i >= insert_pos; i--){
+        HighScore.score[i + 1] = HighScore.score[i];
     }
 
-    ScoreInfo *info = &HighScore.score[placement - 1];
-    // FIXME
+    ScoreInfo *info = &HighScore.score[insert_pos];
+    // @incomplete
     info->day   = 1;
     info->month = 1;
     info->year  = 1999;
@@ -226,9 +230,9 @@ void highscore_menu(void){
             ScoreInfo *b = HighScore.score;
             for(i32 i = 0; i < HighScore.count; i++){
                 b32 is_inserting = state->insert_mode_on && i == state->insert_board_index;
-                const char *name = is_inserting? state->new_name.buffer : b[0].name;
+                const char *name = is_inserting? state->new_name.buffer : b[i].name;
                 draw_centered_text(x, y + spacing_y * y_pen++, White_v4, "%d# %s %02d/%02d/%d %d",
-                    i + 1, name, b[0].month, b[0].day, b[0].year, b[0].score);
+                    i + 1, name, b[i].month, b[i].day, b[i].year, b[i].score);
             }
         } else {
                 y_pen++;

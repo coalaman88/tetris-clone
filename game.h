@@ -98,18 +98,18 @@ typedef struct{ // @MOVE
 
 typedef struct{
     i32 count;
-    ScoreInfo score[3];
+    ScoreInfo score[5];
 }Scoreboard;
 
 extern Scoreboard HighScore;
 
-#define SCOREBOARD_FILE_VERSION "0.1"
+#define SCOREBOARD_FILE_VERSION "0.2"
 #define SCOREBOARD_FILE_VERSION_SIZE 3
 
 extern const char *HighScoreFileName;
 b32 save_highscore_to_disk(const char *, Scoreboard *);
 b32 load_highscore_from_disk(const char *, Scoreboard *);
-void update_scoreboard(i32 score, i32 placement);
+void insert_in_scoreboard(i32 score, i32 placement);
 void init_highscore_menu_in_insert_mode(i32 board_position);
 void restart_game(b32 clear_grid);
 

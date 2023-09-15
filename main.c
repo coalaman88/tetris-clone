@@ -645,8 +645,16 @@ void game_running(void){
         load_grid();
         restart_game(false);
     }
-    if(Keyboard.ctrl.state && KeyPressed(Keyboard.g))
-        GameOver = true;
+    if(Keyboard.ctrl.state){
+        i32 i = 1;
+        for(const Key *k = &Keyboard.n1; k <= &Keyboard.n9; k++){
+            if(KeyPressed(*k)){
+                Score = 1000 * i;
+                GameOver = true;
+            }
+            i++;
+        }
+    }
 
     // @Temp Force save scoreboard
     if(KeyPressed(Keyboard.h)){
@@ -670,8 +678,8 @@ void game_running(void){
     if(KeyPressed(Keyboard.enter) && !confirmation_prompt_open){
         if(GameOver){
             i32 placement = highscore_placement(Score, &HighScore);
-            if(placement > 0){
-                update_scoreboard(Score, placement);
+            if(placement <= array_size(HighScore.score)){
+                insert_in_scoreboard(Score, placement);
                 init_highscore_menu_in_insert_mode(placement);
             } else {
                 restart_game(true);
