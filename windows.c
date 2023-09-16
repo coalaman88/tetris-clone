@@ -4,14 +4,13 @@
 #include <windows.h>
 #include <timeapi.h>
 #include <assert.h>
-#include "engine.h"
 
 #include <GL/glcorearb.h>
 #include <GL/wglext.h>
 
-#include "util.h"
+#include "opengl_api.h"
+#include "engine.h"
 #include "game.h"
-#include "render.h"
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
@@ -24,6 +23,31 @@ static void DrawBuffer(HWND window){
     HDC hdc = GetDC(window);
     SwapBuffers(hdc);
     ReleaseDC(window, hdc);
+}
+
+struct FileInfo{
+    void *file;
+    FILETIME last_write;
+};
+
+void *get_file_handle(void *file_info){
+    struct FileInfo *info = file_info;
+    return info->file;
+}
+
+// TODO use this instead of this method: https://learn.microsoft.com/en-us/windows/win32/fileio/obtaining-directory-change-notifications
+b32 update_file_info(void *info_handle){
+    struct FileInfo *info = (struct FileInfo*)info_handle;
+    FILETIME old_last_write = info->last_write;
+    GetFileTime(info->file, NULL, NULL, &info->last_write);
+    return (CompareFileTime(&old_last_write, &info->last_write) != 0);
+}
+
+void *create_file_info(void *file){
+    struct FileInfo *info = malloc(sizeof(struct FileInfo));
+    info->file = file;
+    GetFileTime(info->file, NULL, NULL, &info->last_write);
+    return info;
 }
 
 static void *GetAnyGLFuncAddress(const char *name)
@@ -376,7 +400,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
-char* os_read_whole_file(void* file, i32 *size){
+char* read_whole_file(void* file, i32 *size){
     HANDLE *_file = (HANDLE*)file;
     u32 file_size = GetFileSize(_file, NULL);
     char *buffer = VirtualAlloc(NULL, file_size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);

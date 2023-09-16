@@ -4,14 +4,13 @@
 #pragma comment(lib, "dependencies\\freetype-lib\\x64\\freetype.lib")
 #pragma comment(lib, "opengl32.lib")
 
-#include <GL/glcorearb.h>
-
 #include "engine.h"
 #include "basic.h"
-#include "util.h"
 #include "game.h"
-#include "render.h"
-#include "draw.h"
+#include "renderer.h"
+
+#include <stdarg.h>
+#include <string.h>
 
 #define GridW 10
 #define GridH 20
@@ -118,6 +117,7 @@ b32 GameOver = false;
 b32 GamePause = false;
 
 struct{
+    b32 piece_setted;
     i32 x, y;
     Piece piece;
     Piece next_piece;
@@ -216,17 +216,19 @@ Piece random_piece(void){
 void spawn_next_piece(void){
     Aim.piece = Aim.next_piece;
     Aim.next_piece = random_piece();
+    Aim.piece_setted = false;
+    PieceStatistics[Aim.piece.type - 1]++;
 
-    Aim.x = random_n(GridW - Aim.piece.side - 1);
-    assert(Aim.x >= 0 && Aim.x < GridW); // FIXME Remove assert
+    Aim.x = random_n(GridW - Aim.piece.side);
     Aim.y = 0;
+}
 
-    if(piece_collided(Aim.x, Aim.y, &Aim.piece))
-        GameOver = true;
+b32 try_spawn_next_piece(void){
+    spawn_next_piece();
+    return !piece_collided(Aim.x, Aim.y, &Aim.piece);
 }
 
 void set_piece(i32 x, i32 y, const Piece *p){
-    PieceStatistics[p->type - 1]++;
     for(i32 i = 0; i < p->side; i++){
         for(i32 j = 0; j < p->side; j++){
             if(p->bitmap[i * p->side + j]){
@@ -312,7 +314,7 @@ b32 highscore_placement(i32 score, const Scoreboard *board){
 
 void EngineInit(void){
     b32 result;
-    init_render();
+    init_renderer();
     init_fonts();
     
     char font_path[256] = {0};
@@ -577,7 +579,7 @@ void move_piece(void){
         CountTicks = 0;
         if(piece_collided(Aim.x, Aim.y, &Aim.piece)){
             set_piece(Aim.x, Aim.y - 1, &Aim.piece);
-            spawn_next_piece();
+            Aim.piece_setted = true;
         }
     }
 }
@@ -586,8 +588,7 @@ enum GameModes GameMode = GM_Menu;
 
 void draw_scene(void){
 
-    glClearColor(0.1f, 0.1f, 0.1f, 0.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    clear_screen(Vec4(0.1f, 0.1f, 0.1f, 0.0f));
 
     const i32 t_x = (WWIDTH / (i32)BlockSize - GridW) / 2;
     const i32 t_y = 1;
@@ -597,11 +598,10 @@ void draw_scene(void){
     if(Keyboard.n0.state)
         draw_grid_debug(t_x, t_y);
     // draw aim piece
-    if(!StreakOn) // to not draw on same frame of a tetris
+    if(!Aim.piece_setted)
         draw_piece(t_x + Aim.x, t_y + Aim.y, &Aim.piece);
 
     draw_statistics(t_x + GridW + 3, 3);
-
 }
 
 void prompt(void){
@@ -655,6 +655,10 @@ void game_running(void){
             i++;
         }
     }
+    if(Keyboard.ctrl.state && Keyboard.n.state){
+        spawn_next_piece();
+        PieceStatistics[Aim.piece.type - 1]++;
+    }
 
     // @Temp Force save scoreboard
     if(KeyPressed(Keyboard.h)){
@@ -687,6 +691,10 @@ void game_running(void){
         } else {
             GamePause = !GamePause;
         }
+    }
+
+    if(Aim.piece_setted && !StreakOn){
+        GameOver = !try_spawn_next_piece();
     }
 
     move_piece();

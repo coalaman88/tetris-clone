@@ -91,23 +91,19 @@ typedef struct{
 
 #define Rect(X, Y, W, H) (Rect){(X), (Y), (W), (H)}
 
-static inline f32 Abs(f32 v){
-    return v > 0? v : -v;
-}
-
-static inline f32 Approachf(f32 v, f32 step, f32 goal){
+static inline f32 approachf(f32 v, f32 step, f32 goal){
     if(v > goal) return MAX(v - step, goal);
     if(v < goal) return MIN(v + step, goal);
     return goal;
 }
 
-static inline i32 Signi(i32 value){
+static inline i32 signi(i32 value){
     if(value > 0) return 1;
     if(value < 0) return -1;
     return 0;
 }
 
-static inline f32 Signf(f32 value){
+static inline f32 signf(f32 value){
     if(value > 0.0f) return 1.0f;
     if(value < 0.0f) return -1.0f;
     return 0.0f;
@@ -120,20 +116,31 @@ static inline void set_zero(void *mem, size_t size){
     }
 }
 
-static inline b32 BoxToBoxCollision(Rect a, Rect b){
-    return ((a.x < b.x + b.w) && (a.x + a.w > b.x) && (a.y < b.y + b.h) && (a.y + a.h > b.y));
+static inline f32 length(f32 x, f32 y){
+    return sqrtf(x * x + y * y);
 }
 
-static inline b32 PointToBoxCollision(Vec2 p, Rect b){
-    return (p.x > b.x && p.x < b.x + b.w && p.y > b.y && p.y < b.y + b.h);
+static f32 dist(Vec2 a, Vec2 b){
+    return length(a.x - b.x, a.y - b.y);
 }
 
-#define Center(IW, CW, CX) ((CW) - (IW)) / 2 + (CX)
-#define Lerp(T,A,B) ((A) + (T) * (float)((B)-(A)))
-#define Unlerp(T,A,B) (((T) - (A)) / (float)((B) - (A)))
+static inline f32 clampf(f32 v, f32 min, f32 max){
+    if(v < min) return min;
+    if(v > max) return max;
+    return v;
+}
 
-//#define Swap(A, B) do {i32 _temp = (A); (A) = (B); (B) = _temp;} while(0)
-#define Swap(X,Y) do{ __typeof__ (X) _T = X; X = Y; Y = _T; }while(0)
+static inline i32 clampi(i32 v, i32 min, i32 max){
+    if(v < min) return min;
+    if(v > max) return max;
+    return v;
+}
+
+static inline void warpi(i32 *v, i32 min, i32 max){
+    if(*v < min) *v = max;
+    else if(*v > max) *v = min;
+}
+
 
 // ===================================================================
 // Graphics
@@ -153,13 +160,6 @@ typedef struct{
     i32 x, y;
     u8* buffer;
 }Bitmap;
-
-
-// TODO new functions to be propely implemented
-static f32 cubic_function(f32 x){
-    float a = -2 * x + 2;
-    return x < 0.5 ? 4 * x * x * x : 1 - a * a * a / 2;
-}
 
 // ===================================================================
 // RNGs
@@ -208,57 +208,4 @@ u64 Random64(void){
 }
 
 #endif
-
-// ===================================================================
-// String
-// ===================================================================
-
-static i32 BinaryToDecimal(char *string, i32 size){
-    i32 value = 0;
-    i32 pow = 1;
-    for(i32 i = size - 1; i >= 0; i--){
-        assert(string[i] == '0' || string[i] == '1');
-        value += (string[i] - '0') * pow;
-        pow *= 2;
-    }
-    return value;
-}
-
-// ===================================================================
-// OS Specifics
-// ===================================================================
-
-static char* LoadFileToMemCRT(char* filename, int* file_size){
-
-    FILE* fp = fopen(filename, "rb");
-
-    if (fp == NULL) {
-        fprintf(stderr, "Unable to open %s\n", filename);
-        fclose(fp);
-        return NULL;
-    }
-
-    fseek(fp, 0, SEEK_END);
-    *file_size = ftell(fp);
-    fseek(fp, 0, SEEK_SET);
-
-    char* file_contents = (char*)malloc(*file_size+1);
-    if (file_contents == NULL) {
-        fprintf(stderr, "Memory error: unable to allocate %d bytes\n", *file_size+1);
-        return NULL;
-    }
-
-    if (fread(file_contents, *file_size, 1, fp) != 1 ){
-        fprintf(stderr, "Unable to read content of %s\n", filename);
-        fclose(fp);
-        free(file_contents);
-        return NULL;
-    }
-
-    fclose(fp);
-    *(file_contents + *file_size) = 0;
-
-    return file_contents;
-}
-
 #endif

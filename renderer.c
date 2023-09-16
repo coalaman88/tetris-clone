@@ -1,8 +1,8 @@
 #include <GL/glcorearb.h>
 #include "engine.h"
-#include "util.h"
 #include "game.h"
-#include "render.h"
+#include "renderer.h"
+#include "opengl_api.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -100,13 +100,6 @@ static void init_batchs(void){
     vertex_count = 0;
 }
 
-// TODO use this instead of this method: https://learn.microsoft.com/en-us/windows/win32/fileio/obtaining-directory-change-notifications
-b32 update_file_info(FileInfo *info){
-    FILETIME old_last_write = info->last_write;
-    GetFileTime(info->file, NULL, NULL, &info->last_write);
-    return (CompareFileTime(&old_last_write, &info->last_write) != 0);
-}
-
 void push_render_quad_command(ShaderContext *context, u32 tex_id, Quad *data){
     if(array_size(vertex_buffer) - vertex_count <= 6 || BatchList.count >= array_size(BatchList.batchs))
         draw_quads();
@@ -126,12 +119,14 @@ void push_render_quad_command(ShaderContext *context, u32 tex_id, Quad *data){
 }
 
 static inline void use_shader_context(ShaderContext *context){
-    FileInfo *vert_info = &context->debug_info.vert_file_info;
-    FileInfo *frag_info = &context->debug_info.frag_file_info;
+    void *vert_info = context->debug_info.vert_file_info;
+    void *frag_info = context->debug_info.frag_file_info;
 
     if(update_file_info(vert_info) | update_file_info(frag_info)){
         printf("updating\n");
-        b32 new_program = create_program(vert_info->file, frag_info->file, context->debug_info.bind_attributes, context->debug_info.bind_attributes_count);
+        HANDLE vert_file = get_file_handle(vert_info);
+        HANDLE frag_file = get_file_handle(frag_info);
+        b32 new_program = create_program(vert_file, frag_file, context->debug_info.bind_attributes, context->debug_info.bind_attributes_count);
 
         if(new_program){
             glDeleteProgram(context->program_id);
@@ -180,6 +175,18 @@ TextureInfo load_texture(const char *file_name){
     return tex;
 }
 
+u32 create_texture_from_bitmap(u8 *data, i32 width, i32 height){
+    u32 id;
+    glGenTextures(1, &id);
+    glBindTexture(GL_TEXTURE_2D, id);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    return id;
+}
+
 GLuint create_program(HANDLE vert_file, HANDLE frag_file, const char *ordered_bind_attribs[], i32 bind_attribs_count){
 
     i32 result;
@@ -187,8 +194,8 @@ GLuint create_program(HANDLE vert_file, HANDLE frag_file, const char *ordered_bi
     i32 error_string_size;
 
     i32 vert_size, frag_size;
-    const char *vert_data = os_read_whole_file(vert_file, &vert_size);
-    const char *frag_data = os_read_whole_file(frag_file, &frag_size);
+    const char *vert_data = read_whole_file(vert_file, &vert_size);
+    const char *frag_data = read_whole_file(frag_file, &frag_size);
 
     GLuint frag = glCreateShader(GL_FRAGMENT_SHADER);
     GLuint vert = glCreateShader(GL_VERTEX_SHADER);
@@ -275,12 +282,10 @@ b32 create_shader_context(ShaderContext *context, const char *vert_shader, const
     context->program_id = program;
     // Debug
     context->debug_info.setup_shader = setup_shader;
-    context->debug_info.vert_file_info.file = vert_file;
-    context->debug_info.frag_file_info.file = frag_file;
+    context->debug_info.vert_file_info = create_file_info(vert_file);
+    context->debug_info.frag_file_info = create_file_info(frag_file);
     context->debug_info.bind_attributes = bind_attribs;
     context->debug_info.bind_attributes_count = bind_attribs_count;
-    GetFileTime(vert_file, NULL, NULL, &context->debug_info.vert_file_info.last_write);
-    GetFileTime(frag_file, NULL, NULL, &context->debug_info.frag_file_info.last_write);
 
     glUseProgram(context->program_id);
     setup_shader(context);
@@ -315,22 +320,21 @@ void setup_primitive_shader(ShaderContext *context){
     context->debug_info.program_is_ready = true;
 }
 
-void init_render(void){
-    const unsigned char *version = glGetString(GL_VERSION);
-    printf("opengl version:%s\n", version);
-
-    /*
+void print_all_gl_extensions(void){
     i32 num;
     glGetIntegerv(GL_MAX_TEXTURE_SIZE, &num);
-    log_printf("max texture size:%dx%d\n", num / 2, num / 2);
+    printf("max texture size:%dx%d\n", num / 2, num / 2);
     glGetIntegerv(GL_NUM_EXTENSIONS, &num);
-    log_printf("extension number:%d\n", num);
-    for(i32 i = 0; i < num; i++)
-        log_printf(" %s\n", glGetStringi(GL_EXTENSIONS, i));
-    */
+    printf("extension number:%d\n", num);
+    for(i32 i = 0; i < num; i++){
+        printf(" %s\n", glGetStringi(GL_EXTENSIONS, i));
+    }
+}
 
-    //const unsigned char extensions = glGetStringi(GL_EXTENSIONS, num);
-    //log_printf("extensions:%s\n", extensions);
+void init_renderer(void){
+    const unsigned char *version = glGetString(GL_VERSION);
+    printf("opengl version:%s\n", version);
+    //print_all_gl_extensions();
 
     /* Allocate and assign a Vertex Array Object to our handle */
     glGenVertexArrays(1, &vertex_array_obj);

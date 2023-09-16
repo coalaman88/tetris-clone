@@ -1,9 +1,7 @@
 #include "engine.h"
-#include "util.h"
 #include "game.h"
 #include "basic.h"
-#include "render.h"
-#include "draw.h"
+#include "renderer.h"
 
 #include <ft2build.h>
 #include <freetype/freetype.h>
@@ -95,19 +93,10 @@ void load_font(const char *name, i32 height_pixel_size, Font *font){
         font->glyphs[c] = append_glyph_on_atlas(&atlas, c, face);
     }
 
-
-    // creating opengl texture
-    font->line_height = height_pixel_size;
-    font->atlas.width = atlas.width;
+    font->atlas.id = create_texture_from_bitmap((u8*)atlas.buffer, atlas.width, atlas.height);
+    font->line_height  = height_pixel_size;
+    font->atlas.width  = atlas.width;
     font->atlas.height = atlas.height; // TODO make the height be only the used?
-
-    glGenTextures(1, &font->atlas.id);
-    glBindTexture(GL_TEXTURE_2D, font->atlas.id);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, atlas.width, atlas.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, atlas.buffer);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
     free(atlas.buffer); // TODO use memory arena
     FT_Done_Face(face);
