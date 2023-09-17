@@ -1,6 +1,6 @@
-#version 330
-in vec2 pos;
-in vec4 color;
+#version 330 core
+layout (location = 0) in vec2 pos;
+layout (location = 2) in vec4 color;
 
 uniform mat4 ident_matrix;
 uniform mat4 trans_matrix;

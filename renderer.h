@@ -1,7 +1,5 @@
 #pragma once
 
-//extern FileInfo;
-
 typedef struct S_ShaderContext {
     u32 program_id;
 
@@ -9,8 +7,6 @@ typedef struct S_ShaderContext {
         struct FileInfo *vert_file_info, *frag_file_info;
         b32 program_is_ready;
         void (*setup_shader)(struct S_ShaderContext*);
-        const char **bind_attributes;
-        i32 bind_attributes_count;
     }debug_info;
 
 }ShaderContext;

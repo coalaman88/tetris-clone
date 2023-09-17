@@ -311,7 +311,6 @@ b32 highscore_placement(i32 score, const Scoreboard *board){
 // BUGS
 // input diagonal moviment
 
-
 void EngineInit(void){
     b32 result;
     init_renderer();

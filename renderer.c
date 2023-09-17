@@ -51,7 +51,6 @@ PFNGLVERTEXATTRIBIPOINTERPROC glVertexAttribIPointer;
 PFNGLGENVERTEXARRAYSPROC glGenVertexArrays;
 PFNGLBINDVERTEXARRAYPROC glBindVertexArray;
 
-
 const Vec4 White_v4  = {1.0f, 1.0f, 1.0f, 1.0f};
 const Vec4 Black_v4  = {0.0f, 0.0f, 0.0f, 1.0f};
 const Vec4 Red_v4    = {1.0f, 0.0f, 0.0f, 1.0f};
@@ -61,22 +60,11 @@ const Vec4 Yellow_v4 = {1.0f, 1.0f, 0.0f, 1.0f};
 
 struct S_ShaderContext PrimitiveShader;
 struct S_ShaderContext TextureShader;
-struct S_ShaderContext CircleShader;
-
-const char *PrimitiveShaderBindAttributes[] = {"pos", "color", "textCoord"};
-const char *TextureShaderBindAttributes[]   = {"pos", "color"};
 
 static GLuint vertex_array_obj, vertex_buffer_obj;
 
-static Vertex vertex_buffer[10000 * 6];
+static Vertex vertex_buffer[60000];
 static i32 vertex_count = 0;
-
-enum{
-    B_NONE,
-    B_QUAD,
-    B_LINE,
-    B_POINT
-};
 
 typedef struct{
     i32 type;
@@ -91,7 +79,7 @@ static struct{
     i32 count;
 }BatchList;
 
-GLuint create_program(HANDLE vert_file, HANDLE frag_file, const char *ordered_bind_attribs[], i32 bind_attribs_count);
+GLuint create_program(HANDLE vert_file, HANDLE frag_file);
 b32 compile_shader(GLuint shader);
 
 static void init_batchs(void){
@@ -126,7 +114,7 @@ static inline void use_shader_context(ShaderContext *context){
         printf("updating\n");
         HANDLE vert_file = get_file_handle(vert_info);
         HANDLE frag_file = get_file_handle(frag_info);
-        b32 new_program = create_program(vert_file, frag_file, context->debug_info.bind_attributes, context->debug_info.bind_attributes_count);
+        b32 new_program = create_program(vert_file, frag_file);
 
         if(new_program){
             glDeleteProgram(context->program_id);
@@ -157,24 +145,6 @@ void draw_quads(void){
     init_batchs();
 }
 
-TextureInfo load_texture(const char *file_name){
-    TextureInfo tex;
-    i32 n;
-    u8 *texture_data = stbi_load(file_name, &tex.width, &tex.height, &n, 4);
-    assert(texture_data);
-
-    glGenTextures(1, &tex.id);
-    glBindTexture(GL_TEXTURE_2D, tex.id);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, tex.width, tex.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture_data);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-    stbi_image_free(texture_data);
-    return tex;
-}
-
 u32 create_texture_from_bitmap(u8 *data, i32 width, i32 height){
     u32 id;
     glGenTextures(1, &id);
@@ -187,8 +157,16 @@ u32 create_texture_from_bitmap(u8 *data, i32 width, i32 height){
     return id;
 }
 
-GLuint create_program(HANDLE vert_file, HANDLE frag_file, const char *ordered_bind_attribs[], i32 bind_attribs_count){
+TextureInfo load_texture(const char *file_name){
+    TextureInfo tex;
+    u8 *texture_data = stbi_load(file_name, &tex.width, &tex.height, NULL, 4);
+    assert(texture_data);
+    tex.id = create_texture_from_bitmap(texture_data, tex.width, tex.height);
+    stbi_image_free(texture_data);
+    return tex;
+}
 
+GLuint create_program(HANDLE vert_file, HANDLE frag_file){
     i32 result;
     char error_buffer[200];
     i32 error_string_size;
@@ -215,10 +193,6 @@ GLuint create_program(HANDLE vert_file, HANDLE frag_file, const char *ordered_bi
     glAttachShader(program, frag);
     glGetProgramiv(program, GL_ATTACHED_SHADERS, &result);
     assert(result == 2);
-
-    for(i32 i = 0; i < bind_attribs_count; i++){
-        glBindAttribLocation(program, i, ordered_bind_attribs[i]);
-    }
 
     glLinkProgram(program);
     glGetProgramiv(program, GL_LINK_STATUS, &result);
@@ -271,11 +245,11 @@ void set_commun_uniforms(ShaderContext *context){
     glUniform1i(text_location, 0);
 }
 
-b32 create_shader_context(ShaderContext *context, const char *vert_shader, const char *frag_shader, void (*setup_shader)(ShaderContext*), const char *bind_attribs[], i32 bind_attribs_count){
+b32 create_shader_context(ShaderContext *context, const char *vert_shader, const char *frag_shader, void (*setup_shader)(ShaderContext*)){
     HANDLE vert_file = CreateFileA(vert_shader, GENERIC_READ | GENERIC_WRITE,  FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
     HANDLE frag_file = CreateFileA(frag_shader, GENERIC_READ | GENERIC_WRITE,  FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
-    GLuint program = create_program(vert_file, frag_file, bind_attribs, bind_attribs_count);
+    GLuint program = create_program(vert_file, frag_file);
     if(!program)
         return false;
 
@@ -284,8 +258,6 @@ b32 create_shader_context(ShaderContext *context, const char *vert_shader, const
     context->debug_info.setup_shader = setup_shader;
     context->debug_info.vert_file_info = create_file_info(vert_file);
     context->debug_info.frag_file_info = create_file_info(frag_file);
-    context->debug_info.bind_attributes = bind_attribs;
-    context->debug_info.bind_attributes_count = bind_attribs_count;
 
     glUseProgram(context->program_id);
     setup_shader(context);
@@ -296,27 +268,11 @@ b32 create_shader_context(ShaderContext *context, const char *vert_shader, const
 
 void setup_texture_shader(ShaderContext *context){
     set_commun_uniforms(context);
-
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position)); // This only tell opengl what is what in
-    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, color));    // the buffer!
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, texture_coord));
-
-    glEnableVertexAttribArray(0);
-    glEnableVertexAttribArray(1);
-    glEnableVertexAttribArray(2);
-
     context->debug_info.program_is_ready = true;
 }
 
 void setup_primitive_shader(ShaderContext *context){
     set_commun_uniforms(context);
-
-    //TODO make another buffer just for this??
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position)); // This only tell opengl what is what in
-    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, color));    // the buffer!
-    
-    glEnableVertexAttribArray(0);
-    glEnableVertexAttribArray(1);
     context->debug_info.program_is_ready = true;
 }
 
@@ -344,13 +300,19 @@ void init_renderer(void){
 
     glGenBuffers(1, &vertex_buffer_obj);
     glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_obj);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertex_buffer), NULL, GL_STREAM_DRAW); // This make the copy!
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertex_buffer), NULL, GL_STREAM_DRAW); // Copy buffer
 
-    b32 result;
-    result = create_shader_context(&TextureShader, "shaders/simple.vert", "shaders/simple.frag", setup_texture_shader, TextureShaderBindAttributes, array_size(TextureShaderBindAttributes));
-    assert(result);
-    result = create_shader_context(&PrimitiveShader, "shaders/primitive.vert", "shaders/primitive.frag", setup_primitive_shader, PrimitiveShaderBindAttributes, array_size(PrimitiveShaderBindAttributes));
-    assert(result);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));      // This only tell opengl what is what in
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, texture_coord)); // the buffer!
+    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, color));    
+
+    glEnableVertexAttribArray(0);
+    glEnableVertexAttribArray(1);
+    glEnableVertexAttribArray(2);
+
+    b32 result0 = create_shader_context(&TextureShader, "shaders/simple.vert", "shaders/simple.frag", setup_texture_shader);
+    b32 result1 = create_shader_context(&PrimitiveShader, "shaders/primitive.vert", "shaders/primitive.frag", setup_primitive_shader);
+    assert(result0 && result1);
 
     glViewport(0, 0, WWIDTH, WHEIGHT);
     glActiveTexture(GL_TEXTURE0);
@@ -374,7 +336,7 @@ void immediate_draw_rect(f32 x1, f32 y1, f32 w, f32 h, Vec4 color){
     f32 x2 = x1 + w;
     f32 y2 = y1 + h;
 
-    Quad new_quad = { // FIXME probably make anoter buffer that don't use texture coords??
+    Quad new_quad = {
         {{ x1, y1 }, { 0.0f, 0.0f }, { color.x, color.y, color.z, color.w }},
         {{ x1, y2 }, { 0.0f, 0.0f }, { color.x, color.y, color.z, color.w }},
         {{ x2, y2 }, { 0.0f, 0.0f }, { color.x, color.y, color.z, color.w }},
