@@ -333,7 +333,6 @@ void EngineInit(void){
         set_zero(&HighScore, sizeof(HighScore));
     }
 
-    Score = 1000; // Debug
 }
 
 static inline Vec4 invert_color(Vec4 color){
@@ -793,9 +792,7 @@ void EngineUpdate(void){
     }
 
     //draw_text(WWIDTH - 100.0f, 0, White_v4, "FPS:%u", FramesPerSec);
-
-    draw_quads();
-
+    execute_draw_commands();
 }
 
 void EngineDraw(void){

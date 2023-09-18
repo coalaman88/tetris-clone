@@ -139,7 +139,6 @@ static void LoadOpenGLFunctions(void){
     glGetStringi = GetAnyGLFuncAddress("glGetStringi");
     glGetStringi = GetAnyGLFuncAddress("glGetStringi");
     //glBindTextureUnit = GetAnyGLFuncAddress("glBindTextureUnit");
-    //glDrawElements = GetAnyGLFuncAddress("glDrawElements");
     glGenVertexArrays = GetAnyGLFuncAddress("glGenVertexArrays");
     glBindVertexArray = GetAnyGLFuncAddress("glBindVertexArray");
 

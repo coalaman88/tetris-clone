@@ -43,7 +43,6 @@ PFNGLBLENDFUNCSEPARATEPROC glBlendFuncSeparate;
 PFNGLDRAWARRAYSINSTANCEDPROC glDrawArraysInstanced;
 PFNGLBINDTEXTUREUNITPROC glBindTextureUnit;
 PFNGLGETSTRINGIPROC glGetStringi;
-//PFNGLDRAWELEMENTSPROC glDrawElements;
 
 PFNGLVERTEXATTRIBPOINTERPROC glVertexAttribPointer;
 PFNGLVERTEXATTRIBIPOINTERPROC glVertexAttribIPointer;
@@ -79,31 +78,30 @@ static struct{
     i32 count;
 }BatchList;
 
-GLuint create_program(HANDLE vert_file, HANDLE frag_file);
-b32 compile_shader(GLuint shader);
+typedef struct {
+    b32 drawing;
+    i32 vertex_count;
 
-static void init_batchs(void){
+    // Draw State
+    // - per vertex effect
+    Vec2 texture_coord;
+    Vec4 color;
+
+    // - end effect
+    u32 primitive;
+    u32 texture;
+    ShaderContext *shader;
+}T_ImmediateDrawContext;
+
+T_ImmediateDrawContext ImmediateDrawContext = {0};
+
+static GLuint create_program(HANDLE vert_file, HANDLE frag_file);
+static b32 compile_shader(GLuint shader);
+
+static void init_batchs(i32 vertices_left){
     BatchList.count = 0;
     BatchList.current = NULL;
-    vertex_count = 0;
-}
-
-void push_render_quad_command(ShaderContext *context, u32 tex_id, Quad *data){
-    if(array_size(vertex_buffer) - vertex_count <= 6 || BatchList.count >= array_size(BatchList.batchs))
-        draw_quads();
-
-    if(BatchList.current == NULL || tex_id != BatchList.current->tex_id || BatchList.current->shader_context != context){
-        BatchList.current = BatchList.batchs + BatchList.count++;
-        BatchList.current->tex_id = tex_id;
-        BatchList.current->count_vertex = 6;
-        BatchList.current->shader_context = context;
-        BatchList.current->type = GL_TRIANGLES;
-    } else{
-        BatchList.current->count_vertex += 6;
-    }
-
-    memcpy(vertex_buffer + vertex_count, data, sizeof(Quad));
-    vertex_count += 6;
+    vertex_count = vertices_left;
 }
 
 static inline void use_shader_context(ShaderContext *context){
@@ -128,21 +126,32 @@ static inline void use_shader_context(ShaderContext *context){
         context->debug_info.setup_shader(context);
 }
 
-void draw_quads(void){
-    i32 vertex_start = 0;
-    glBufferSubData(GL_ARRAY_BUFFER, vertex_start, sizeof(Vertex) * vertex_count, vertex_buffer);
+void execute_draw_commands(void){
+    i32 vertices_start = 0;
+    i32 vertices_end   = vertex_count;
+    i32 vertices_left  = 0;
+    
+    if(ImmediateDrawContext.drawing){
+        vertices_end -= ImmediateDrawContext.vertex_count;
+        vertices_left = ImmediateDrawContext.vertex_count;
+    }
+    glBufferSubData(GL_ARRAY_BUFFER, vertices_start, sizeof(Vertex) * vertices_end, vertex_buffer);
 
     for(i32 i = 0; i < BatchList.count; i++){
         Batch *batch = &BatchList.batchs[i];
-
         assert(batch->type && batch->shader_context);
         use_shader_context(batch->shader_context);
         glBindTexture(GL_TEXTURE_2D, batch->tex_id);
-        glDrawArrays(batch->type, vertex_start, batch->count_vertex);
-        vertex_start += batch->count_vertex;
+        glDrawArrays(batch->type, vertices_start, batch->count_vertex);
+        vertices_start += batch->count_vertex;
     }
 
-    init_batchs();
+    if(vertices_left){
+        assert(false);
+        i32 size  = sizeof(Vertex) * vertices_left;
+        memmove(vertex_buffer, vertex_buffer + vertices_end, size);
+    }
+    init_batchs(vertices_left);
 }
 
 u32 create_texture_from_bitmap(u8 *data, i32 width, i32 height){
@@ -166,7 +175,7 @@ TextureInfo load_texture(const char *file_name){
     return tex;
 }
 
-GLuint create_program(HANDLE vert_file, HANDLE frag_file){
+static GLuint create_program(HANDLE vert_file, HANDLE frag_file){
     i32 result;
     char error_buffer[200];
     i32 error_string_size;
@@ -206,7 +215,7 @@ GLuint create_program(HANDLE vert_file, HANDLE frag_file){
     return program;
 }
 
-b32 compile_shader(GLuint shader){
+static b32 compile_shader(GLuint shader){
     char error_buffer[400];
     i32 error_string_size, result;
     glCompileShader(shader);
@@ -216,7 +225,7 @@ b32 compile_shader(GLuint shader){
     return result;
 }
 
-void set_commun_uniforms(ShaderContext *context){
+static void set_commun_uniforms(ShaderContext *context){
     const GLfloat ident_matrix[4][4] = {
         { 1.0,  0.0,  0.0,  0.0},
         { 0.0,  1.0,  0.0,  0.0},
@@ -245,7 +254,7 @@ void set_commun_uniforms(ShaderContext *context){
     glUniform1i(text_location, 0);
 }
 
-b32 create_shader_context(ShaderContext *context, const char *vert_shader, const char *frag_shader, void (*setup_shader)(ShaderContext*)){
+static b32 create_shader_context(ShaderContext *context, const char *vert_shader, const char *frag_shader, void (*setup_shader)(ShaderContext*)){
     HANDLE vert_file = CreateFileA(vert_shader, GENERIC_READ | GENERIC_WRITE,  FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
     HANDLE frag_file = CreateFileA(frag_shader, GENERIC_READ | GENERIC_WRITE,  FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
@@ -276,7 +285,7 @@ void setup_primitive_shader(ShaderContext *context){
     context->debug_info.program_is_ready = true;
 }
 
-void print_all_gl_extensions(void){
+static void print_all_gl_extensions(void){
     i32 num;
     glGetIntegerv(GL_MAX_TEXTURE_SIZE, &num);
     printf("max texture size:%dx%d\n", num / 2, num / 2);
@@ -326,43 +335,130 @@ void init_renderer(void){
     while(error = glGetError(), error)
         printf("Error:%x\n", error);
 
-    init_batchs();
+    init_batchs(0);
     stbi_set_flip_vertically_on_load(true);
 }
 
+void set_simple_quad(f32 x, f32 y, f32 w, f32 h){
+    set_texture_coord(Vec2(0.0f, 1.0f));
+    set_vertex(Vec2(x, y));
 
-void immediate_draw_rect(f32 x1, f32 y1, f32 w, f32 h, Vec4 color){
+    set_texture_coord(Vec2(1.0f, 1.0f));
+    set_vertex(Vec2(x + w, y));
 
-    f32 x2 = x1 + w;
-    f32 y2 = y1 + h;
+    set_texture_coord(Vec2(0.0f, 0.0f));
+    set_vertex(Vec2(x, y + h));
 
-    Quad new_quad = {
-        {{ x1, y1 }, { 0.0f, 0.0f }, { color.x, color.y, color.z, color.w }},
-        {{ x1, y2 }, { 0.0f, 0.0f }, { color.x, color.y, color.z, color.w }},
-        {{ x2, y2 }, { 0.0f, 0.0f }, { color.x, color.y, color.z, color.w }},
-        {{ x2, y2 }, { 0.0f, 0.0f }, { color.x, color.y, color.z, color.w }},
-        {{ x2, y1 }, { 0.0f, 0.0f }, { color.x, color.y, color.z, color.w }},
-        {{ x1, y1 }, { 0.0f, 0.0f }, { color.x, color.y, color.z, color.w }},
-    };
+    set_texture_coord(Vec2(0.0f, 0.0f));
+    set_vertex(Vec2(x, y + h));
 
-    push_render_quad_command(&PrimitiveShader, 0, &new_quad);
+    set_texture_coord(Vec2(1.0f, 1.0f));
+    set_vertex(Vec2(x + w, y));
+
+    set_texture_coord(Vec2(1.0f, 0.0f));
+    set_vertex(Vec2(x + w, y + h));
 }
 
-void immediate_draw_texture(float x1, float y1, f32 scale, TextureInfo tex){
+void immediate_draw_rect(f32 x, f32 y, f32 w, f32 h, Vec4 color){
+    immediate_begin(DRAW_TRIANGLE);
+    set_shader(&PrimitiveShader);
+    set_color(color);
+    set_simple_quad(x, y, w, h);
+    immediate_end();
+}
 
-    f32 x2 = roundf(tex.width    * scale);
-    f32 y2 = roundf(tex.height * scale);
+static void enqueue_render_command(void){
+    const T_ImmediateDrawContext *context = &ImmediateDrawContext;
+    if(BatchList.count >= array_size(BatchList.batchs))
+        execute_draw_commands();
 
-    Quad new_quad = {
-        {{ x1 +  0, y1 + y2 }, { 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }},
-        {{ x1 +  0, y1 +  0 }, { 0.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }},
-        {{ x1 + x2, y1 +  0 }, { 1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }},
-        {{ x1 + x2, y1 +  0 }, { 1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }},
-        {{ x1 + x2, y1 + y2 }, { 1.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }},
-        {{ x1 +  0, y1 + y2 }, { 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }},
-    };
+    if(BatchList.current == NULL || BatchList.current->tex_id != context->texture || BatchList.current->shader_context != context->shader){
+        BatchList.current = BatchList.batchs + BatchList.count++;
+        BatchList.current->tex_id = context->texture;
+        BatchList.current->count_vertex = context->vertex_count;
+        BatchList.current->shader_context = context->shader;
+        BatchList.current->type = GL_TRIANGLES;
+    } else{
+        BatchList.current->count_vertex += context->vertex_count;
+    }
+}
 
-    push_render_quad_command(&TextureShader, tex.id, &new_quad);
+void immediate_begin(u32 primitive){
+    T_ImmediateDrawContext *context = &ImmediateDrawContext;
+    assert(!context->drawing);
+    context->drawing = true;
+    context->vertex_count = 0;
+    context->texture_coord = Vec2(0, 0);
+    context->color = Vec4(0, 0, 0, 0);
+    context->primitive = primitive;
+    context->texture = 0;
+    context->shader = &PrimitiveShader;
+}
+
+void immediate_end(void){
+    T_ImmediateDrawContext *context = &ImmediateDrawContext;
+    assert(context->drawing);
+    assert(context->primitive == DRAW_TRIANGLE);
+    assert(context->vertex_count % 3 == 0);
+    enqueue_render_command();
+    context->drawing = false;
+}
+
+void set_color(Vec4 color){
+    T_ImmediateDrawContext *context = &ImmediateDrawContext;
+    assert(context->drawing);
+    context->color = color;
+}
+
+void set_texture_coord(Vec2 coord){
+    T_ImmediateDrawContext *context = &ImmediateDrawContext;
+    assert(context->drawing);
+    context->texture_coord = coord;
+}
+
+void set_texture(u32 texture){
+    T_ImmediateDrawContext *context = &ImmediateDrawContext;
+    assert(context->drawing);
+    context->texture = texture;
+}
+
+void set_shader(ShaderContext *shader){
+    T_ImmediateDrawContext *context = &ImmediateDrawContext;
+    assert(context->drawing);
+    context->shader = shader;
+}
+
+void set_vertex(Vec2 pos){
+    T_ImmediateDrawContext *context = &ImmediateDrawContext;
+    assert(context->drawing);
+    
+    if(vertex_count > array_size(vertex_buffer)){
+        execute_draw_commands();
+        assert(vertex_count < array_size(vertex_buffer)); // trying to draw something really big or forggot to call immediate_end
+    }
+
+    context->vertex_count++;
+    Vertex *current = &vertex_buffer[vertex_count++];
+    current->position[0] = pos.x;
+    current->position[1] = pos.y;
+    current->texture_coord[0] = context->texture_coord.x;
+    current->texture_coord[1] = context->texture_coord.y;
+    current->color[0] = context->color.x;
+    current->color[1] = context->color.y;
+    current->color[2] = context->color.z;
+    current->color[3] = context->color.w;
+}
+
+void immediate_draw_texture(float x, float y, f32 scale, TextureInfo tex){
+    f32 w = roundf(tex.width  * scale);
+    f32 h = roundf(tex.height * scale);
+    
+    immediate_begin(DRAW_TRIANGLE);
+    set_texture(tex.id);
+    set_shader(&TextureShader);
+    set_color(White_v4);
+    set_simple_quad(x, y, w, h);
+    immediate_end();
 }
 
 void clear_screen(Vec4 color){

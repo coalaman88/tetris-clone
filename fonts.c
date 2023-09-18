@@ -124,16 +124,30 @@ void render_glyph(GlyphInfo g, f32 x1, f32 y1, Vec4 color){
     f32 y2 = y1 + g.h;
     f32 x2 = x1 + g.w;
 
-    Quad new_quad = {
-        {{ x1, y1 }, { tex_x1, tex_y2 }, { color.x, color.y, color.z, color.w }},
-        {{ x1, y2 }, { tex_x1, tex_y1 }, { color.x, color.y, color.z, color.w }},
-        {{ x2, y2 }, { tex_x2, tex_y1 }, { color.x, color.y, color.z, color.w }},
-        {{ x2, y2 }, { tex_x2, tex_y1 }, { color.x, color.y, color.z, color.w }},
-        {{ x2, y1 }, { tex_x2, tex_y2 }, { color.x, color.y, color.z, color.w }},
-        {{ x1, y1 }, { tex_x1, tex_y2 }, { color.x, color.y, color.z, color.w }},
-    };
+    immediate_begin(DRAW_TRIANGLE);
+    set_shader(&TextureShader);
+    set_color(color);
+    set_texture(CurrentFont->atlas.id);
+    
+    set_texture_coord(Vec2(tex_x1, tex_y2));
+    set_vertex(Vec2(x1, y1));
 
-    push_render_quad_command(&TextureShader, CurrentFont->atlas.id, &new_quad);
+    set_texture_coord(Vec2(tex_x1, tex_y1));
+    set_vertex(Vec2(x1, y2));
+
+    set_texture_coord(Vec2(tex_x2, tex_y1));
+    set_vertex(Vec2(x2, y2));
+
+    set_texture_coord(Vec2(tex_x2, tex_y1));
+    set_vertex(Vec2(x2, y2));
+
+    set_texture_coord(Vec2(tex_x2, tex_y2));
+    set_vertex(Vec2(x2, y1));
+
+    set_texture_coord(Vec2(tex_x1, tex_y2));
+    set_vertex(Vec2(x1, y1));
+
+    immediate_end();
 }
 
 i32 count_glyphs_advance(const char *string){

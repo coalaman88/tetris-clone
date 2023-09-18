@@ -36,7 +36,6 @@ extern PFNGLBLENDFUNCSEPARATEPROC glBlendFuncSeparate;
 extern PFNGLBINDTEXTUREUNITPROC glBindTextureUnit; // Extension
 extern PFNGLDRAWARRAYSINSTANCEDPROC glDrawArraysInstanced;
 extern PFNGLGETSTRINGIPROC glGetStringi;
-//extern PFNGLDRAWELEMENTSPROC glDrawElements;
 extern PFNGLGENBUFFERSPROC  glGenBuffers;
 extern PFNGLGENVERTEXARRAYSPROC glGenVertexArrays;
 extern PFNGLBINDVERTEXARRAYPROC glBindVertexArray;
