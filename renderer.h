@@ -2,13 +2,9 @@
 
 typedef struct S_ShaderContext {
     u32 program_id;
-
     struct{
         struct FileInfo *vert_file_info, *frag_file_info;
-        b32 program_is_ready;
-        void (*setup_shader)(struct S_ShaderContext*);
     }debug_info;
-
 }ShaderContext;
 
 extern struct S_ShaderContext TextureShader;
@@ -26,7 +22,7 @@ enum DrawPrimitiveTypes{
     DRAW_TRIANGLE,
 };
 
-void immediate_begin(u32 primitive);
+void immediate_begin(i32 primitive);
 void immediate_end(void);
 void set_color(Vec4 color);
 void set_texture_coord(Vec2 coord);

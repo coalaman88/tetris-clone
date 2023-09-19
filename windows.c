@@ -131,6 +131,7 @@ static void LoadOpenGLFunctions(void){
     glDeleteShader = GetAnyGLFuncAddress("glDeleteShader");
     glBindAttribLocation = GetAnyGLFuncAddress("glBindAttribLocation");
     glUniformMatrix4fv = GetAnyGLFuncAddress("glUniformMatrix4fv");
+    glUniformMatrix3fv = GetAnyGLFuncAddress("glUniformMatrix3fv");
     glUniform1i = GetAnyGLFuncAddress("glUniform1i");
     glActiveTexture = GetAnyGLFuncAddress("glActiveTexture");
     glBlendEquationSeparate = GetAnyGLFuncAddress("glBlendEquationSeparate");

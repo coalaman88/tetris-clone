@@ -36,6 +36,7 @@ PFNGLUNIFORM1IVPROC glUniform1iv;
 PFNGLDELETESHADERPROC glDeleteShader;
 PFNGLBINDATTRIBLOCATIONPROC glBindAttribLocation;
 PFNGLUNIFORMMATRIX4FVPROC glUniformMatrix4fv;
+PFNGLUNIFORMMATRIX3FVPROC glUniformMatrix3fv;
 PFNGLGETUNIFORMLOCATIONPROC glGetUniformLocation;
 PFNGLACTIVETEXTUREPROC glActiveTexture;
 PFNGLBLENDEQUATIONSEPARATEPROC glBlendEquationSeparate;
@@ -66,31 +67,38 @@ static Vertex vertex_buffer[60000];
 static i32 vertex_count = 0;
 
 typedef struct{
+    i32 sample_tex;
+    float uv_matrix[3][3];
+    float ident_matrix[4][4];
+    float translation_matrix[4][4];
+}Uniforms;
+
+typedef struct{
     i32 type;
     u32 tex_id;
-    i32 count_vertex;
+    i32 vertices_count;
     ShaderContext *shader_context;
-}Batch;
+    Uniforms uniforms;
+}DrawCommand;
 
 static struct{
-    Batch batchs[124];
-    Batch *current;
+    DrawCommand batchs[124];
+    DrawCommand *current;
     i32 count;
 }BatchList;
 
 typedef struct {
     b32 drawing;
-    i32 vertex_count;
 
     // Draw State
     // - per vertex effect
     Vec2 texture_coord;
     Vec4 color;
 
-    // - end effect
-    u32 primitive;
-    u32 texture;
-    ShaderContext *shader;
+    // - global effect
+    Uniforms uniforms;
+
+    DrawCommand command;
 }T_ImmediateDrawContext;
 
 T_ImmediateDrawContext ImmediateDrawContext = {0};
@@ -117,13 +125,64 @@ static inline void use_shader_context(ShaderContext *context){
         if(new_program){
             glDeleteProgram(context->program_id);
             context->program_id = new_program;
-            context->debug_info.program_is_ready = false;
         }
     }
 
     glUseProgram(context->program_id);
-    if(!context->debug_info.program_is_ready)
-        context->debug_info.setup_shader(context);
+}
+
+u32 get_gl_mode(u32 renderer_type){
+    renderer_type -= 1;
+    assert(renderer_type >= 0);
+    u32 lookup_table[] = {GL_TRIANGLES};
+    assert(renderer_type < array_size(lookup_table));
+    return lookup_table[renderer_type];
+}
+
+static void set_default_uniforms(Uniforms *uniforms){
+    float a = 2.0f / WWIDTH;
+    float b = 2.0f / WHEIGHT;
+
+    const GLfloat translation_matrix[4][4] = {
+        {   a,  0.0,  0.0, -1.0},
+        { 0.0,   -b,  0.0,  1.0},
+        { 0.0,  0.0,  1.0,  0.0},
+        { 0.0,  0.0,  0.0,  1.0}
+    };
+
+    const GLfloat ident_matrix[4][4] = {
+        { 1.0,  0.0,  0.0,  0.0},
+        { 0.0,  1.0,  0.0,  0.0},
+        { 0.0,  0.0,  1.0,  0.0},
+        { 0.0,  0.0,  0.0,  1.0}
+    };
+
+    const GLfloat uv_matrix[3][3] = {
+        { 1.0,  0.0,  0.0},
+        { 0.0,  1.0,  0.0},
+        { 0.0,  0.0,  1.0},
+    };
+
+    uniforms->sample_tex = 0;
+    memcpy(uniforms->uv_matrix, uv_matrix, sizeof(uv_matrix));
+    memcpy(uniforms->ident_matrix, ident_matrix, sizeof(ident_matrix));
+    memcpy(uniforms->translation_matrix, translation_matrix, sizeof(translation_matrix));
+}
+
+void update_shader_uniforms(u32 program, const Uniforms *uniforms){
+    i32 location;
+    // TODO save the location insted. Save in the shader_context?
+    location = glGetUniformLocation(program, "ident_matrix");
+    glUniformMatrix4fv(location, 1, GL_TRUE, (float*)uniforms->ident_matrix);
+
+    location = glGetUniformLocation(program, "trans_matrix");
+    glUniformMatrix4fv(location, 1, GL_TRUE, (float*)uniforms->translation_matrix);
+
+    location = glGetUniformLocation(program, "texture_trans_matrix");
+    glUniformMatrix3fv(location, 1, GL_TRUE, (float*)uniforms->uv_matrix);
+
+    location = glGetUniformLocation(program, "sample_tex");
+    glUniform1i(location, uniforms->sample_tex);
 }
 
 void execute_draw_commands(void){
@@ -132,18 +191,20 @@ void execute_draw_commands(void){
     i32 vertices_left  = 0;
     
     if(ImmediateDrawContext.drawing){
-        vertices_end -= ImmediateDrawContext.vertex_count;
-        vertices_left = ImmediateDrawContext.vertex_count;
+        vertices_end -= ImmediateDrawContext.command.vertices_count;
+        vertices_left = ImmediateDrawContext.command.vertices_count;
     }
     glBufferSubData(GL_ARRAY_BUFFER, vertices_start, sizeof(Vertex) * vertices_end, vertex_buffer);
 
     for(i32 i = 0; i < BatchList.count; i++){
-        Batch *batch = &BatchList.batchs[i];
+        DrawCommand *batch = &BatchList.batchs[i];
         assert(batch->type && batch->shader_context);
         use_shader_context(batch->shader_context);
+        update_shader_uniforms(batch->shader_context->program_id, &batch->uniforms);
         glBindTexture(GL_TEXTURE_2D, batch->tex_id);
-        glDrawArrays(batch->type, vertices_start, batch->count_vertex);
-        vertices_start += batch->count_vertex;
+        u32 gl_mode = get_gl_mode(batch->type);
+        glDrawArrays(gl_mode, vertices_start, batch->vertices_count);
+        vertices_start += batch->vertices_count;
     }
 
     if(vertices_left){
@@ -225,36 +286,7 @@ static b32 compile_shader(GLuint shader){
     return result;
 }
 
-static void set_commun_uniforms(ShaderContext *context){
-    const GLfloat ident_matrix[4][4] = {
-        { 1.0,  0.0,  0.0,  0.0},
-        { 0.0,  1.0,  0.0,  0.0},
-        { 0.0,  0.0,  1.0,  0.0},
-        { 0.0,  0.0,  0.0,  1.0}
-    };
-
-    float a = 2.0f / WWIDTH;
-    float b = 2.0f / WHEIGHT;
-
-    const GLfloat translation_matrix[4][4] = {
-        {   a,  0.0,  0.0, -1.0},
-        { 0.0,   -b,  0.0,  1.0},
-        { 0.0,  0.0,  1.0,  0.0},
-        { 0.0,  0.0,  0.0,  1.0}
-    };
-
-    GLint location;
-    location = glGetUniformLocation(context->program_id, "ident_matrix");
-    glUniformMatrix4fv(location, 1, GL_FALSE, (GLfloat*)ident_matrix);
-
-    location = glGetUniformLocation(context->program_id, "trans_matrix");
-    glUniformMatrix4fv(location, 1, GL_TRUE, (GLfloat*)translation_matrix);
-
-    GLint text_location = glGetUniformLocation(context->program_id, "sample_tex");
-    glUniform1i(text_location, 0);
-}
-
-static b32 create_shader_context(ShaderContext *context, const char *vert_shader, const char *frag_shader, void (*setup_shader)(ShaderContext*)){
+static b32 create_shader_context(ShaderContext *context, const char *vert_shader, const char *frag_shader){
     HANDLE vert_file = CreateFileA(vert_shader, GENERIC_READ | GENERIC_WRITE,  FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
     HANDLE frag_file = CreateFileA(frag_shader, GENERIC_READ | GENERIC_WRITE,  FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
@@ -264,25 +296,10 @@ static b32 create_shader_context(ShaderContext *context, const char *vert_shader
 
     context->program_id = program;
     // Debug
-    context->debug_info.setup_shader = setup_shader;
     context->debug_info.vert_file_info = create_file_info(vert_file);
     context->debug_info.frag_file_info = create_file_info(frag_file);
 
-    glUseProgram(context->program_id);
-    setup_shader(context);
-    glUseProgram(0);
-
     return true;
-}
-
-void setup_texture_shader(ShaderContext *context){
-    set_commun_uniforms(context);
-    context->debug_info.program_is_ready = true;
-}
-
-void setup_primitive_shader(ShaderContext *context){
-    set_commun_uniforms(context);
-    context->debug_info.program_is_ready = true;
 }
 
 static void print_all_gl_extensions(void){
@@ -319,8 +336,8 @@ void init_renderer(void){
     glEnableVertexAttribArray(1);
     glEnableVertexAttribArray(2);
 
-    b32 result0 = create_shader_context(&TextureShader, "shaders/simple.vert", "shaders/simple.frag", setup_texture_shader);
-    b32 result1 = create_shader_context(&PrimitiveShader, "shaders/primitive.vert", "shaders/primitive.frag", setup_primitive_shader);
+    b32 result0 = create_shader_context(&TextureShader, "shaders/simple.vert", "shaders/simple.frag");
+    b32 result1 = create_shader_context(&PrimitiveShader, "shaders/primitive.vert", "shaders/primitive.frag");
     assert(result0 && result1);
 
     glViewport(0, 0, WWIDTH, WHEIGHT);
@@ -330,6 +347,8 @@ void init_renderer(void){
     glEnable(GL_LINE_SMOOTH);
     glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
     glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
+
+    set_default_uniforms(&ImmediateDrawContext.uniforms);
 
     GLuint error;
     while(error = glGetError(), error)
@@ -367,39 +386,45 @@ void immediate_draw_rect(f32 x, f32 y, f32 w, f32 h, Vec4 color){
     immediate_end();
 }
 
+static inline b32 is_same_draw_command(const DrawCommand *a, const DrawCommand *b){
+    if(!a || !b) return false;
+    if(a->type != b->type) return false;
+    if(a->tex_id != b->tex_id) return false;
+    if(a->shader_context != b->shader_context) return false;
+    if(memcmp(&a->uniforms, &b->uniforms, sizeof(Uniforms)) != 0) return false;
+    return true;
+}
+
 static void enqueue_render_command(void){
     const T_ImmediateDrawContext *context = &ImmediateDrawContext;
     if(BatchList.count >= array_size(BatchList.batchs))
         execute_draw_commands();
 
-    if(BatchList.current == NULL || BatchList.current->tex_id != context->texture || BatchList.current->shader_context != context->shader){
-        BatchList.current = BatchList.batchs + BatchList.count++;
-        BatchList.current->tex_id = context->texture;
-        BatchList.current->count_vertex = context->vertex_count;
-        BatchList.current->shader_context = context->shader;
-        BatchList.current->type = GL_TRIANGLES;
+    if(!is_same_draw_command(BatchList.current, &context->command)){
+        BatchList.current  = BatchList.batchs + BatchList.count++;
+        *BatchList.current = context->command;
     } else{
-        BatchList.current->count_vertex += context->vertex_count;
+        BatchList.current->vertices_count += context->command.vertices_count;
     }
 }
 
-void immediate_begin(u32 primitive){
+void immediate_begin(i32 primitive){
     T_ImmediateDrawContext *context = &ImmediateDrawContext;
     assert(!context->drawing);
     context->drawing = true;
-    context->vertex_count = 0;
     context->texture_coord = Vec2(0, 0);
     context->color = Vec4(0, 0, 0, 0);
-    context->primitive = primitive;
-    context->texture = 0;
-    context->shader = &PrimitiveShader;
+    context->command.vertices_count = 0;
+    context->command.type = primitive;
+    context->command.tex_id = 0;
+    context->command.shader_context = &PrimitiveShader;
 }
 
 void immediate_end(void){
     T_ImmediateDrawContext *context = &ImmediateDrawContext;
     assert(context->drawing);
-    assert(context->primitive == DRAW_TRIANGLE);
-    assert(context->vertex_count % 3 == 0);
+    assert(context->command.vertices_count % 3 == 0);
+    context->command.uniforms = context->uniforms;
     enqueue_render_command();
     context->drawing = false;
 }
@@ -419,13 +444,13 @@ void set_texture_coord(Vec2 coord){
 void set_texture(u32 texture){
     T_ImmediateDrawContext *context = &ImmediateDrawContext;
     assert(context->drawing);
-    context->texture = texture;
+    context->command.tex_id = texture;
 }
 
 void set_shader(ShaderContext *shader){
     T_ImmediateDrawContext *context = &ImmediateDrawContext;
     assert(context->drawing);
-    context->shader = shader;
+    context->command.shader_context = shader;
 }
 
 void set_vertex(Vec2 pos){
@@ -437,7 +462,7 @@ void set_vertex(Vec2 pos){
         assert(vertex_count < array_size(vertex_buffer)); // trying to draw something really big or forggot to call immediate_end
     }
 
-    context->vertex_count++;
+    context->command.vertices_count++;
     Vertex *current = &vertex_buffer[vertex_count++];
     current->position[0] = pos.x;
     current->position[1] = pos.y;
@@ -459,6 +484,11 @@ void immediate_draw_texture(float x, float y, f32 scale, TextureInfo tex){
     set_color(White_v4);
     set_simple_quad(x, y, w, h);
     immediate_end();
+}
+
+void set_uv_matrix(const float *matrix3x3){
+    T_ImmediateDrawContext *context = &ImmediateDrawContext;
+    memcpy(context->uniforms.uv_matrix, matrix3x3, sizeof(context->uniforms.uv_matrix));
 }
 
 void clear_screen(Vec4 color){
