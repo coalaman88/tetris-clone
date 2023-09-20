@@ -491,6 +491,41 @@ void immediate_draw_texture(float x, float y, f32 scale, TextureInfo tex){
     immediate_end();
 }
 
+void immediate_draw_sprite(float x0, float y0, f32 scale, Vec4 color, Sprite sprite){
+    f32 y1 = y0 + roundf(sprite.w * scale);
+    f32 x1 = x0 + roundf(sprite.h * scale);
+    
+    f32 tex_x0 = (f32)sprite.x / sprite.atlas.width;
+    f32 tex_x1 = (f32)(sprite.x + sprite.w) / sprite.atlas.width;
+    f32 tex_y0 = 1.0f - (f32)(sprite.y + sprite.h) / sprite.atlas.height;
+    f32 tex_y1 = 1.0f - (f32)sprite.y / sprite.atlas.height;
+
+    immediate_begin(DRAW_TRIANGLE);
+    set_shader(&TextureShader);
+    set_color(color);
+    set_texture(sprite.atlas.id);
+    
+    set_texture_coord(Vec2(tex_x0, tex_y1));
+    set_vertex(Vec2(x0, y0));
+
+    set_texture_coord(Vec2(tex_x0, tex_y0));
+    set_vertex(Vec2(x0, y1));
+
+    set_texture_coord(Vec2(tex_x1, tex_y0));
+    set_vertex(Vec2(x1, y1));
+
+    set_texture_coord(Vec2(tex_x1, tex_y0));
+    set_vertex(Vec2(x1, y1));
+
+    set_texture_coord(Vec2(tex_x1, tex_y1));
+    set_vertex(Vec2(x1, y0));
+
+    set_texture_coord(Vec2(tex_x0, tex_y1));
+    set_vertex(Vec2(x0, y0));
+
+    immediate_end();
+}
+
 void set_uv_matrix(const float *matrix3x3){
     T_ImmediateDrawContext *context = &ImmediateDrawContext;
     memcpy(context->uniforms.uv_matrix, matrix3x3, sizeof(context->uniforms.uv_matrix));

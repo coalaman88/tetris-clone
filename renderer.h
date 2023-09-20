@@ -17,6 +17,12 @@ u32 create_texture_from_bitmap(u8 *data, i32 width, i32 height);
 TextureInfo load_texture(const char *file_name);
 void execute_draw_commands(void);
 
+typedef struct{
+    i32 x, y;
+    i32 w, h;
+    TextureInfo atlas;
+}Sprite;
+
 enum DrawPrimitiveTypes{
     DRAW_NONE,
     DRAW_TRIANGLE,
@@ -30,6 +36,7 @@ void set_texture(u32 texture);
 void set_shader(ShaderContext *shader);
 void set_vertex(Vec2 pos);
 void set_simple_quad(f32 x, f32 y, f32 w, f32 h);
+void immediate_draw_sprite(float x0, float y0, f32 scale, Vec4 color, Sprite sprite);
 
 void immediate_draw_texture(float x1, float y1, f32 scale, TextureInfo tex);
 void immediate_draw_rect(f32 x1, f32 y1, f32 w, f32 h, Vec4 color);

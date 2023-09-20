@@ -96,7 +96,7 @@ const Piece RightZ = {
         0, 0, 0}
 };
 
-const f32 BlockSize = 22.0f;
+const f32 BlockSize = 25.0f;
 
 const Piece *Pieces[7] = {&Line, &Block, &Piramid, &LeftL, &RightL, &LeftZ, &RightZ};
 const Vec4 PieceColors[] = {
@@ -311,6 +311,8 @@ b32 highscore_placement(i32 score, const Scoreboard *board){
 // BUGS
 // input diagonal moviment
 
+Sprite BorderSprite;
+
 void EngineInit(void){
     b32 result;
     init_renderer();
@@ -333,6 +335,15 @@ void EngineInit(void){
         set_zero(&HighScore, sizeof(HighScore));
     }
 
+    TextureInfo tile_atlas = load_texture("data\\tile_sprite.png");
+
+    BorderSprite = (Sprite){
+        .x = 0,
+        .y = 0,
+        .w = (i32)BlockSize,
+        .h = (i32)BlockSize,
+        .atlas = tile_atlas
+    };
 }
 
 static inline Vec4 invert_color(Vec4 color){
@@ -372,6 +383,10 @@ void draw_tile(i32 x, i32 y, Vec4 color){
     immediate_draw_rect(x * BlockSize, y * BlockSize, BlockSize, BlockSize, color);
 }
 
+void draw_border_tile(i32 x, i32 y, Vec4 color){
+    immediate_draw_sprite((f32)x * BlockSize, (f32)y * BlockSize, 1.0f, color, BorderSprite);
+}
+
 void draw_background(i32 t_x, i32 t_y){
     const f32 p_x = t_x * BlockSize;
     const f32 p_y = t_y * BlockSize;
@@ -398,15 +413,16 @@ void draw_grid(i32 t_x, i32 t_y){
     const i32 margin_w = GridW + 2;
     const i32 margin_h = GridH + 2;
 
-    // margin
+    // border
+    Vec4 border_color = Vec4(0.2f, 0.2f, 0.2f, 1.0f);
     for(i32 y = 0; y < margin_h; y++){
-        draw_tile(t_x2, t_y2 + y, Black_v4);
-        draw_tile(t_x2 + margin_w - 1, t_y2 + y, Black_v4);
+        draw_border_tile(t_x2, t_y2 + y, border_color);
+        draw_border_tile(t_x2 + margin_w - 1, t_y2 + y, border_color);
     }
 
     for(i32 x = 0; x < margin_w; x++){
-        draw_tile(t_x2 + x, t_y2, Black_v4);
-        draw_tile(t_x2 + x, t_y2 + margin_h - 1, Black_v4);
+        draw_border_tile(t_x2 + x, t_y2, border_color);
+        draw_border_tile(t_x2 + x, t_y2 + margin_h - 1, border_color);
     }
 
     // grid
