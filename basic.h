@@ -165,46 +165,65 @@ typedef struct{
 // RNGs
 // ===================================================================
 
-#define RNGSEED32 1548112359 // Those are just randomaly typed numbers
-#define RNGSEED64 2469558614013255971
-
-extern u32 RNGseed;
-extern u64 RNGseed64;
-
-extern u32 Random(void);
-extern u64 Random64(void);
-extern i32 random_in(i32 a, i32 b);
-extern u32 random_n(u32 max);
+void set_seed(u64 seed);
+u64 get_seed(void);
+u64 random_u64(void);
+i64 random_i64(void);
+i32 random_u32(void);
+i32 random_i32(void);
+i32 random_in(i32 a, i32 b);
+u32 random_n(u32 max);
 
 #ifdef BASIC_IMPLEMENT
+#include <intrin.h>
 
-u32 RNGseed   = RNGSEED32;
-u64 RNGseed64 = RNGSEED64;
+u64 _RNGSeed = 0;
+u64 _RNGinitSeed = 0;
 
-/* xorshift64s, variant A_1(12,25,27) with multiplier M_32 from line 3 of table 5 */
-u32 Random(void) {
-    u64 x = RNGseed64;
-    x ^= x >> 12;
-    x ^= x << 25;
-    x ^= x >> 27;
-    RNGseed64 = x;
-    return (u32)((x * 0x2545F4914F6CDD1DULL) >> 32);
+// from: https://rosettacode.org/wiki/Pseudo-random_numbers/Splitmix64
+static u64 splitmix64(void){
+    _RNGSeed += 0x9e3779b97f4a7c15;
+    u64 z = _RNGSeed;
+    z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9;
+    z = (z ^ (z >> 27)) * 0x94d049bb133111eb;
+    return z ^ (z >> 31);
+}
+
+void set_seed(u64 seed){
+    assert(seed != 0);
+    _RNGinitSeed = seed;
+    _RNGSeed = seed;
+    for(i32 i = 0; i < 16; i++) splitmix64();
+}
+
+u64 get_seed(void){
+    return _RNGinitSeed;
+}
+
+u64 random_u64(void){
+    if(!_RNGSeed) set_seed(__rdtsc());
+    return splitmix64();
+}
+
+i64 random_i64(void){
+    return (i64)(random_u64() & 0x7fffffffffffffff);
+}
+
+i32 random_u32(void){
+    return random_u64() & 0xffffffff;
+}
+
+i32 random_i32(void){
+    return (i32)(random_u64() & 0x7ffffff);
 }
 
 i32 random_in(i32 a, i32 b){
     i32 len = abs(a - b) + 1;
-    return a + Random() % len;
+    return a + random_i32() % len;
 }
 
 u32 random_n(u32 max){
-    return Random() % (max + 1);
-}
-
-u64 Random64(void){
-    u64 z = (RNGseed64 += UINT64_C(0x9E3779B97F4A7C15));
-    z = (z ^ (z >> 30)) * UINT64_C(0xBF58476D1CE4E5B9);
-    z = (z ^ (z >> 27)) * UINT64_C(0x94D049BB133111EB);
-    return z ^ (z >> 31);
+    return random_u32() % (max + 1);
 }
 
 #endif

@@ -391,7 +391,12 @@ static inline b32 is_same_draw_command(const DrawCommand *a, const DrawCommand *
     if(a->type != b->type) return false;
     if(a->tex_id != b->tex_id) return false;
     if(a->shader_context != b->shader_context) return false;
-    if(memcmp(&a->uniforms, &b->uniforms, sizeof(Uniforms)) != 0) return false;
+    
+    const Uniforms *ua = &a->uniforms;
+    const Uniforms *ub = &b->uniforms;
+    if(ua->sample_tex != ub->sample_tex) return false;
+    if(memcmp(ua->uv_matrix, ub->uv_matrix, sizeof(ua->uv_matrix)) != 0) return false;
+    if(memcmp(ua->translation_matrix, ub->translation_matrix, sizeof(ua->translation_matrix)) != 0) return false;
     return true;
 }
 

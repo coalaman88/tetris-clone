@@ -56,6 +56,6 @@ void EngineUpdate(void);
 void EngineDraw(void);
 void EngineClearInput(void);
 void EngineProcessInput(void);
-void EngineSetup(u64 seed);
+void EngineSetup(void);
 
 #endif

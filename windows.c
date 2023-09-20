@@ -237,14 +237,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
     QueryPerformanceFrequency(&freq);
     assert(freq.QuadPart > 0);
 
-//#ifdef DEBUG_BUILD
-    //u64 rng_seed = DebugGameSeed;
-//#else
-    QueryPerformanceCounter(&timer_start);
-    u64 rng_seed = timer_start.QuadPart;
-//#endif
-
-    EngineSetup(rng_seed);
+    EngineSetup();
 
     MSG msg = {0};
     timer_start.QuadPart = 0;

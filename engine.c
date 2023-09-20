@@ -12,11 +12,8 @@ b32 GameRunning;
 struct S_Mouse Mouse;
 struct S_Keyboard Keyboard;
 
-void EngineSetup(u64 seed){
+void EngineSetup(void){
     GameRunning = 1;
-    //RNGseed = (u32)(seed & 0x00000000ffffffff);
-    if(seed != 0)
-        RNGseed64 = seed; // From basic.h random stuff
     EngineInit();
 }
 
