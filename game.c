@@ -453,7 +453,7 @@ void draw_grid_debug(i32 t_x, i32 t_y){
 }
 
 b32 is_game_running(void){
-    return (GameMode == GM_Running) | GameOver | GamePause;
+    return !((GameMode != GM_Running) | GameOver | GamePause);
 }
 
 void update_grid(void){
