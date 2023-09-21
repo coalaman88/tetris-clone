@@ -153,10 +153,7 @@ void insert_in_scoreboard(i32 score, i32 placement){
     }
 
     ScoreInfo *info = &HighScore.score[insert_pos];
-    // @incomplete
-    info->day   = 1;
-    info->month = 1;
-    info->year  = 1999;
+    info->date  = os_get_local_time();
     info->score = score;
     set_zero(info->name, sizeof(info->name));
 }
@@ -230,8 +227,9 @@ void highscore_menu(void){
             for(i32 i = 0; i < HighScore.count; i++){
                 b32 is_inserting = state->insert_mode_on && i == state->insert_board_index;
                 const char *name = is_inserting? state->new_name.buffer : b[i].name;
-                draw_centered_text(x, y + spacing_y * y_pen++, White_v4, "%d# %s %02d/%02d/%d %d",
-                    i + 1, name, b[i].month, b[i].day, b[i].year, b[i].score);
+                Date date = b[i].date;
+                draw_centered_text(x, y + spacing_y * y_pen++, White_v4, "%d# %s %02d/%02d/%d Score: %d",
+                    i + 1, name, date.month, date.day, date.year, b[i].score);
             }
         } else {
                 y_pen++;

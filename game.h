@@ -58,7 +58,7 @@ void open_menu(i32 destination);
 
 typedef struct{
     char name[6];
-    i32 month, day, year;
+    Date date;
     i64 score;
 }ScoreInfo;
 
@@ -80,10 +80,3 @@ void init_highscore_menu_in_insert_mode(i32 board_position);
 void restart_game(b32 clear_grid);
 
 void enqueue_message(Vec4 color, const char *format, ...);
-
-// OS functions
-b32 update_file_info(void *info_handle);
-void *get_file_handle(void *file_info); // @debug
-void *create_file_info(void *file); // @debug
-char* read_whole_file(void *file, i32 *size);
-void os_font_path(char *buffer, u32 size);

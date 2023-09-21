@@ -415,3 +415,14 @@ void os_font_path(char *buffer, u32 size){
     i32 result = strcat_s(buffer, size, "\\Fonts") == 0;
     assert(result);
 }
+
+Date os_get_local_time(void){
+    SYSTEMTIME time;
+    GetLocalTime(&time);
+    Date date = {
+        .day   = time.wDay,
+        .month = time.wMonth,
+        .year  = time.wYear
+    };
+    return date;
+}

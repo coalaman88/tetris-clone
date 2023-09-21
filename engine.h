@@ -58,4 +58,18 @@ void EngineClearInput(void);
 void EngineProcessInput(void);
 void EngineSetup(void);
 
+typedef struct{
+    i32 day;
+    i32 month;
+    i32 year;
+}Date;
+
+// OS functions
+b32 update_file_info(void *info_handle);
+void *get_file_handle(void *file_info); // @debug
+void *create_file_info(void *file); // @debug
+char* read_whole_file(void *file, i32 *size);
+void os_font_path(char *buffer, u32 size);
+Date os_get_local_time(void);
+
 #endif
