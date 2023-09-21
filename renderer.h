@@ -66,7 +66,6 @@ extern Font *CurrentFont;
 void init_fonts(void);
 void load_font(const char *name, i32 height_pixel_size, Font *font);
 void set_font(Font *font);
-void draw_font_test(void);
 
 i32 draw_text(f32 x, f32 y, Vec4 color, const char *format, ...);
 i32 draw_centered_text(f32 x, f32 y, Vec4 color, const char *format, ...);

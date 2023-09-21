@@ -96,7 +96,7 @@ void load_font(const char *name, i32 height_pixel_size, Font *font){
     font->atlas.id = create_texture_from_bitmap((u8*)atlas.buffer, atlas.width, atlas.height);
     font->line_height  = height_pixel_size;
     font->atlas.width  = atlas.width;
-    font->atlas.height = atlas.height; // TODO make the height be only the used?
+    font->atlas.height = atlas.height;
 
     free(atlas.buffer); // TODO use memory arena
     FT_Done_Face(face);
@@ -112,42 +112,11 @@ void init_fonts(void){
     assert(!ft_error);
 }
 
-void render_glyph(GlyphInfo g, f32 x1, f32 y1, Vec4 color){
-    x1 += g.offset.x;
-    y1 += CurrentFont->line_height - g.offset.y;
-
-    f32 tex_x1 = (f32)g.atlas.x / CurrentFont->atlas.width;
-    f32 tex_x2 = (f32)(g.atlas.x + g.w) / CurrentFont->atlas.width;
-    f32 tex_y1 = 1.0f - (f32)(g.atlas.y + g.h) / CurrentFont->atlas.height;
-    f32 tex_y2 = 1.0f - (f32)g.atlas.y / CurrentFont->atlas.height;
-
-    f32 y2 = y1 + g.h;
-    f32 x2 = x1 + g.w;
-
-    immediate_begin(DRAW_TRIANGLE);
-    set_shader(&TextureShader);
-    set_color(color);
-    set_texture(CurrentFont->atlas.id);
-    
-    set_texture_coord(Vec2(tex_x1, tex_y2));
-    set_vertex(Vec2(x1, y1));
-
-    set_texture_coord(Vec2(tex_x1, tex_y1));
-    set_vertex(Vec2(x1, y2));
-
-    set_texture_coord(Vec2(tex_x2, tex_y1));
-    set_vertex(Vec2(x2, y2));
-
-    set_texture_coord(Vec2(tex_x2, tex_y1));
-    set_vertex(Vec2(x2, y2));
-
-    set_texture_coord(Vec2(tex_x2, tex_y2));
-    set_vertex(Vec2(x2, y1));
-
-    set_texture_coord(Vec2(tex_x1, tex_y2));
-    set_vertex(Vec2(x1, y1));
-
-    immediate_end();
+void render_glyph(GlyphInfo g, f32 x, f32 y, Vec4 color){
+    x += g.offset.x;
+    y += CurrentFont->line_height - g.offset.y;
+    Sprite glyph = {.x = g.atlas.x, .y = g.atlas.y, .w = g.w, .h = g.h, .atlas = CurrentFont->atlas};
+    immediate_draw_sprite(x, y, 1.0f, color, glyph);
 }
 
 i32 count_glyphs_advance(const char *string){
@@ -225,12 +194,4 @@ i32 draw_text_warped(Rect rec, Vec4 color, const char *format, ...){
         pen.x += g.advance;
     }
     return pen.x; // TODO return Vec2i
-}
-
-void draw_font_test(void){
-    i32 c = 'f';
-    render_glyph(CurrentFont->glyphs[c], 200, 200, White_v4);
-    immediate_draw_texture(100, 0, 1.0f, CurrentFont->atlas);
-    draw_text(300, 300, White_v4, "Renderizando glifos corretamente finalmente?");
-    draw_text(300, 400, White_v4, "Float:%f String:%s Integer:%d", PI, "lion", 42);
 }

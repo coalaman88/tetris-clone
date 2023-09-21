@@ -19,7 +19,7 @@ Font BigFont;
 Font DefaultFont;
 
 i32 StreakOn = false;
-i32 StreakTimer = 0;
+f32 StreakTimer = 0;
 i32 Grid[GridH][GridW] = {0};
 i32 PieceStatistics[array_size(Pieces)] = {0};
 Scoreboard HighScore;
@@ -116,9 +116,10 @@ const Vec4 PieceColors[] = {
 
 i32 PieceIndex = 0;
 i32 Score = 0;
-i32 CountTicks = 0;
 b32 GameOver = false;
 b32 GamePause = false;
+f32 GravityCount = 0;
+f32 MoveDownTime = 0.65f;
 
 struct{
     b32 piece_setted;
@@ -150,10 +151,10 @@ typedef struct DebugMessage_S{
 struct DebugMessageQueue_S{
     i32 start;
     i32 end;
-    i32 time;
-    i32 messages_time;
+    f32 time;
+    f32 messages_time;
     DebugMessage messages[10];
-}DebugMessageQueue = {.start = 0, .end = 0, .time = 0, .messages_time = 120};
+}DebugMessageQueue = {.start = 0, .end = 0, .time = 0, .messages_time = 2.0f};
 
 void update_messages(void){
     struct DebugMessageQueue_S *log = &DebugMessageQueue;
@@ -161,14 +162,14 @@ void update_messages(void){
     f32 offset = (f32)CurrentFont->line_height;
 
     if(log->end - log->start != 0){
-        log->time++; // FIXME
+        log->time += TimeElapsed;
         if(log->time >= log->messages_time){
-            log->start = ++log->start % array_size(log->messages);
+            log->start = (log->start + 1) % array_size(log->messages);
             log->time = 0;
         }
     }
 
-    for(i32 i = log->start; i != log->end; i = ++i % array_size(log->messages)){
+    for(i32 i = log->start; i != log->end; i = (i + 1) % array_size(log->messages)){
         DebugMessage *m = &log->messages[i];
         draw_text(0, WHEIGHT - offset - 6.0f, m->color, m->content);
         offset += spacing;
@@ -309,8 +310,6 @@ b32 highscore_placement(i32 score, const Scoreboard *board){
 
 // TODO list
 // # Macro stuff
-// High score db
-// menu
 // seting
 // sound
 // key remap
@@ -373,17 +372,12 @@ Vec4 hex_color(u32 hex){
     return v;
 }
 
-// FIXME make all frames to secounds!
-const i32 first_repeat_delay   = 15;
-const i32 secound_repeat_delay = 4;
+const f32 first_repeat_delay   = 0.25f;
+const f32 secound_repeat_delay = 0.065f;
 
-b32 repeat_delay  = 0;
-i32 pressed_timer = 0;
+f32 repeat_delay  = 0;
+f32 pressed_timer = 0;
 b32 pressed = false;
-
-// FIXME looks bad.. also frame based
-i32 DownAcc = 1;
-i32 DownSpeed = 40;
 
 b32 key_repeat(Key *k){
     if(!k->state) return false;
@@ -397,8 +391,6 @@ b32 key_repeat(Key *k){
 }
 
 void draw_background(i32 t_x, i32 t_y){
-    const f32 p_x = t_x * BlockSize;
-    const f32 p_y = t_y * BlockSize;
     const Vec4 bg_color0 = hex_color(0x202020ff);
     const Vec4 bg_color1 = hex_color(0x303030ff);
 
@@ -406,7 +398,7 @@ void draw_background(i32 t_x, i32 t_y){
     for(i32 y = t_y; y < t_y + GridH; y++){
         for(i32 x = t_x; x < t_x + GridW; x++){
             Vec4 color = x % 2 == offset? bg_color0 : bg_color1;
-                draw_tile(x, y, color, BackgroundSprite);
+            draw_tile(x, y, color, BackgroundSprite);
         }
         offset = !offset;
     }
@@ -440,7 +432,8 @@ void draw_grid(i32 t_x, i32 t_y){
             if(tile){
                 Vec4 color = get_piece_color(tile);
                 if(StreakOn && y >= tetris_line_start && y <= tetris_line_end){ // animate tetris
-                    Vec4 blink_color = StreakTimer % 10 < 5? invert_color(color) : White_v4;
+                    f32 ms = StreakTimer * 100.0f;
+                    Vec4 blink_color = (i32)ms % 10 < 5? invert_color(color) : White_v4;
                     draw_tile(t_x + x, t_y + y, blink_color, PieceSprite);
                 } else {
                     draw_tile(t_x + x, t_y + y, color, PieceSprite);
@@ -459,13 +452,17 @@ void draw_grid_debug(i32 t_x, i32 t_y){
     }
 }
 
+b32 is_game_running(void){
+    return (GameMode == GM_Running) | GameOver | GamePause;
+}
+
 void update_grid(void){
-    if(GameOver || GamePause) return;
+    if(!is_game_running()) return;
     if(StreakOn){
         if(StreakTimer <= 0){
             StreakOn = false;
         } else {
-            StreakTimer--; // TODO
+            StreakTimer -= TimeElapsed;
             return;
         }
     } else {
@@ -489,7 +486,7 @@ void update_grid(void){
             Score += streak * 1000;
 
             if(streak >= 4){
-                StreakTimer = 1 * 60;
+                StreakTimer = 1.0f;
                 StreakOn = true;
                 return;
             }
@@ -507,7 +504,6 @@ void update_grid(void){
         }
     }
     GapeQueue.count = 0;
-
 }
 
 void save_grid(void){ // @debug
@@ -541,7 +537,7 @@ void restart_game(b32 clear_grid){
         memset(Grid, 0, sizeof(Grid)); // clean grid
     Aim.next_piece = random_piece();
     spawn_next_piece();
-    CountTicks = 0;
+    GravityCount = 0;
     Score = 0;
     GameOver = false;
     GamePause = false;
@@ -570,7 +566,7 @@ void draw_statistics(i32 x, i32 y){
 }
 
 void move_piece(void){
-    if(GameOver || GamePause || StreakOn) return;
+    if(!is_game_running() | StreakOn) return;
 
     if(KeyPressed(Keyboard.q)){
         Piece new_pos = Aim.piece;
@@ -593,13 +589,13 @@ void move_piece(void){
     }
 
     if(Keyboard.s.state)
-        CountTicks += DownAcc * 10;
+        GravityCount += TimeElapsed * 10;
 
     if(Debug.falling)
-        CountTicks += DownAcc;
-    if(CountTicks >= DownSpeed){
+        GravityCount += TimeElapsed;
+    if(GravityCount >= MoveDownTime){
         Aim.y += 1;
-        CountTicks = 0;
+        GravityCount = 0;
         if(piece_collided(Aim.x, Aim.y, &Aim.piece)){
             set_piece(Aim.x, Aim.y - 1, &Aim.piece);
             Aim.piece_setted = true;
@@ -635,7 +631,7 @@ void prompt(void){
     warpi(&confirmation_prompt_cursor, 0, 1);
 
     if(KeyPressed(Keyboard.enter)){
-        if(confirmation_prompt_cursor == 0){
+        if(confirmation_prompt_cursor == 1){
             restart_game(true);
             enqueue_message(Green_v4, "Restarted!");
         }
@@ -655,8 +651,8 @@ void prompt(void){
     color.w = 0.3f;
     immediate_draw_rect(0, 0, WWIDTH, WHEIGHT, color);
     draw_centered_text(center_x, center_y + line_space * line++, Red_v4, "Reset game?");
-    draw_centered_text(center_x, center_y + line_space * line++, this == 0? White_v4 : brightness(White_v4, 0.3f), "YES");
-    draw_centered_text(center_x, center_y + line_space * line++, this == 1? White_v4 : brightness(White_v4, 0.3f), "NO");
+    draw_centered_text(center_x, center_y + line_space * line++, this == 0? White_v4 : brightness(White_v4, 0.3f), "NO");
+    draw_centered_text(center_x, center_y + line_space * line++, this == 1? White_v4 : brightness(White_v4, 0.3f), "YES");
     set_font(font_backup);
 }
 
@@ -668,16 +664,6 @@ void game_running(void){
         load_grid();
         restart_game(false);
     }
-    if(Keyboard.ctrl.state){
-        i32 i = 1;
-        for(const Key *k = &Keyboard.n1; k <= &Keyboard.n9; k++){
-            if(KeyPressed(*k)){
-                Score = 1000 * i;
-                GameOver = true;
-            }
-            i++;
-        }
-    }
     if(Keyboard.ctrl.state && Keyboard.n.state){
         spawn_next_piece();
         PieceStatistics[Aim.piece.type - 1]++;
@@ -688,21 +674,12 @@ void game_running(void){
         save_highscore_to_disk(HighScoreFileName, &HighScore);
     }
 
-    // Call Settings Menu
-    if(KeyPressed(Keyboard.esc)){
+    if(KeyPressed(Keyboard.esc)){ // Open settings menu
         open_menu(S_Pause);
-        return; // FIXME skipping a drawing frame!!!
-    }
-
-    // Reset game
-    if(KeyPressed(Keyboard.o)){
+    } else if(KeyPressed(Keyboard.o)){ // Reset game
         confirmation_prompt_open = false;
         GameMode = GM_Prompt;
-        return; // FIXME skipping a drawing frame!!!
-    }
-
-    // Pause game
-    if(KeyPressed(Keyboard.enter) && !confirmation_prompt_open){
+    } else if(KeyPressed(Keyboard.enter) && !confirmation_prompt_open){ // Pause game
         if(GameOver){
             i32 placement = highscore_placement(Score, &HighScore);
             if(placement <= array_size(HighScore.score)){
@@ -734,7 +711,7 @@ void game_running(void){
     }
 
     if(KeyPressed(Keyboard.z)){
-        PieceIndex = ++PieceIndex % array_size(Pieces);
+        PieceIndex = (PieceIndex + 1) % array_size(Pieces);
     }
 
     const i32 t_x = (WWIDTH / (i32)BlockSize - GridW) / 2;
@@ -754,7 +731,7 @@ void game_running(void){
                     Aim.piece = *piece;
                     Aim.x = m_x - 1;
                     Aim.y = m_y - 1;
-                    CountTicks = 0;
+                    GravityCount = 0;
                 }
                 draw_piece(t_x + m_x - 1, t_y + m_y - 1, piece);
             } else if(Debug.mode == place_piece){
@@ -813,10 +790,10 @@ void EngineUpdate(void){
         repeat_delay  = first_repeat_delay;
     }else{
         if(pressed_timer >= repeat_delay) pressed_timer = 0;
-        pressed_timer++;
+        pressed_timer += TimeElapsed;
     }
 
-    //draw_text(WWIDTH - 100.0f, 0, White_v4, "FPS:%u", FramesPerSec);
+    //draw_text(WWIDTH - 100.0f, 0, White_v4, "FPS:%u", FramesPerSec);    
     execute_draw_commands();
 }
 
