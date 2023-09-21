@@ -31,6 +31,10 @@ const i32 BlinkTile = 200;
 static b32 confirmation_prompt_open = false;
 static i32 confirmation_prompt_cursor = 0;
 
+Sprite BorderSprite;
+Sprite BackgroundSprite;
+Sprite PieceSprite;
+
 // Using Super Rotation System
 
 const Piece Line = {
@@ -241,11 +245,16 @@ void set_piece(i32 x, i32 y, const Piece *p){
     }
 }
 
+void draw_tile(i32 x, i32 y, Vec4 color, Sprite sprite){
+    immediate_draw_sprite((f32)x * BlockSize, (f32)y * BlockSize, 1.0f, color, sprite);
+}
+
 void draw_piece(i32 p_x, i32 p_y, const Piece *piece){
     for(i32 y = 0; y < piece->side; y++){
         for(i32 x = 0; x < piece->side; x++){
             if(piece->bitmap[y * piece->side + x]){
-                immediate_draw_rect((p_x + x) * BlockSize, (p_y + y) * BlockSize, BlockSize, BlockSize, get_piece_color(piece->type));
+                Vec4 color = get_piece_color(piece->type);
+                draw_tile(p_x + x, p_y + y, color, PieceSprite);
             }
         }
     }
@@ -311,8 +320,6 @@ b32 highscore_placement(i32 score, const Scoreboard *board){
 // BUGS
 // input diagonal moviment
 
-Sprite BorderSprite;
-
 void EngineInit(void){
     b32 result;
     init_renderer();
@@ -344,6 +351,16 @@ void EngineInit(void){
         .h = (i32)BlockSize,
         .atlas = tile_atlas
     };
+
+    PieceSprite = (Sprite){
+        .x = 2 * (i32)BlockSize,
+        .y = 0,
+        .w = (i32)BlockSize,
+        .h = (i32)BlockSize,
+        .atlas = tile_atlas
+    };
+
+    BackgroundSprite = PieceSprite;
 }
 
 static inline Vec4 invert_color(Vec4 color){
@@ -379,26 +396,17 @@ b32 key_repeat(Key *k){
     return false;
 }
 
-void draw_tile(i32 x, i32 y, Vec4 color){
-    immediate_draw_rect(x * BlockSize, y * BlockSize, BlockSize, BlockSize, color);
-}
-
-void draw_border_tile(i32 x, i32 y, Vec4 color){
-    immediate_draw_sprite((f32)x * BlockSize, (f32)y * BlockSize, 1.0f, color, BorderSprite);
-}
-
 void draw_background(i32 t_x, i32 t_y){
     const f32 p_x = t_x * BlockSize;
     const f32 p_y = t_y * BlockSize;
-    const Vec4 background_color0 = hex_color(0x222222ff);
-    const Vec4 background_color1 = hex_color(0x333333ff);
+    const Vec4 bg_color0 = hex_color(0x202020ff);
+    const Vec4 bg_color1 = hex_color(0x303030ff);
 
-    immediate_draw_rect(p_x, p_y, BlockSize * GridW, BlockSize * GridH, background_color0);
     i32 offset = 0;
     for(i32 y = t_y; y < t_y + GridH; y++){
         for(i32 x = t_x; x < t_x + GridW; x++){
-            if(x % 2 == offset)
-                draw_tile(x, y, background_color1);
+            Vec4 color = x % 2 == offset? bg_color0 : bg_color1;
+                draw_tile(x, y, color, BackgroundSprite);
         }
         offset = !offset;
     }
@@ -414,15 +422,15 @@ void draw_grid(i32 t_x, i32 t_y){
     const i32 margin_h = GridH + 2;
 
     // border
-    Vec4 border_color = Vec4(0.2f, 0.2f, 0.2f, 1.0f);
+    Vec4 border_color = Vec4(0.2f, 0.2f, 0.35f, 1.0f);
     for(i32 y = 0; y < margin_h; y++){
-        draw_border_tile(t_x2, t_y2 + y, border_color);
-        draw_border_tile(t_x2 + margin_w - 1, t_y2 + y, border_color);
+        draw_tile(t_x2, t_y2 + y, border_color, BorderSprite);
+        draw_tile(t_x2 + margin_w - 1, t_y2 + y, border_color, BorderSprite);
     }
 
     for(i32 x = 0; x < margin_w; x++){
-        draw_border_tile(t_x2 + x, t_y2, border_color);
-        draw_border_tile(t_x2 + x, t_y2 + margin_h - 1, border_color);
+        draw_tile(t_x2 + x, t_y2, border_color, BorderSprite);
+        draw_tile(t_x2 + x, t_y2 + margin_h - 1, border_color, BorderSprite);
     }
 
     // grid
@@ -432,9 +440,10 @@ void draw_grid(i32 t_x, i32 t_y){
             if(tile){
                 Vec4 color = get_piece_color(tile);
                 if(StreakOn && y >= tetris_line_start && y <= tetris_line_end){ // animate tetris
-                    draw_tile(t_x + x, t_y + y, StreakTimer % 10 < 5? invert_color(color) : White_v4);
+                    Vec4 blink_color = StreakTimer % 10 < 5? invert_color(color) : White_v4;
+                    draw_tile(t_x + x, t_y + y, blink_color, PieceSprite);
                 } else {
-                    draw_tile(t_x + x, t_y + y, color);
+                    draw_tile(t_x + x, t_y + y, color, PieceSprite);
                 }
             }
         }
@@ -551,7 +560,7 @@ void draw_statistics(i32 x, i32 y){
     i32 b_y = 1;
     i32 b_x = 2;
 
-    draw_centered_text((b_x + 2) * BlockSize, b_y / 2.0f * BlockSize, White_v4, "-Statistics-");
+    draw_centered_text((b_x + 2) * BlockSize, b_y * BlockSize * 0.6f, White_v4, "-Statistics-");
     for(i32 i = 0; i < array_size(Pieces); i++){
         const Piece *p = Pieces[i];
         i32 offset_y = i * 3;

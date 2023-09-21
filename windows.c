@@ -235,7 +235,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
     LARGE_INTEGER timer_start, timer_end, freq;
     timeGetDevCaps(&time_caps, sizeof(time_caps));
     QueryPerformanceFrequency(&freq);
-    assert(freq.QuadPart > 0);
+    timeBeginPeriod(time_caps.wPeriodMin);
 
     EngineSetup();
 
@@ -263,14 +263,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
         i32 time_left = TARGETFPS - ms_elapsed;
 
         if(time_left > 0){
-            timeBeginPeriod(time_caps.wPeriodMin);
             Sleep(time_left);
-            timeEndPeriod(time_caps.wPeriodMin);
             ms_elapsed = TARGETFPS; // TODO Should i query again?
         }
         TimeElapsed = (f32)ms_elapsed / 1000.0f;
     }
-
+    
     return 0;
 }
 

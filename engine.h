@@ -5,7 +5,7 @@
 
 #define WSCALE 2
 #define FWIDTH  400
-#define FHEIGHT 280
+#define FHEIGHT 300
 #define WWIDTH  (FWIDTH * WSCALE)
 #define WHEIGHT (FHEIGHT * WSCALE)
 #define TARGETFPS (1000 / 60)
