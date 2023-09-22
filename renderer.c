@@ -99,9 +99,9 @@ typedef struct {
     Uniforms uniforms;
 
     DrawCommand command;
-}T_ImmediateDrawContext;
+}T_DrawContext;
 
-T_ImmediateDrawContext ImmediateDrawContext = {0};
+T_DrawContext DrawContext = {0};
 
 static GLuint create_program(HANDLE vert_file, HANDLE frag_file);
 static b32 compile_shader(GLuint shader);
@@ -171,7 +171,7 @@ static void set_default_uniforms(Uniforms *uniforms){
 
 void update_shader_uniforms(u32 program, const Uniforms *uniforms){
     i32 location;
-    // TODO save the location insted. Save in the shader_context?
+    // TODO save the location instead. Save in the shader_context?
     location = glGetUniformLocation(program, "ident_matrix");
     glUniformMatrix4fv(location, 1, GL_TRUE, (float*)uniforms->ident_matrix);
 
@@ -190,9 +190,9 @@ void execute_draw_commands(void){
     i32 vertices_end   = vertex_count;
     i32 vertices_left  = 0;
     
-    if(ImmediateDrawContext.drawing){
-        vertices_end -= ImmediateDrawContext.command.vertices_count;
-        vertices_left = ImmediateDrawContext.command.vertices_count;
+    if(DrawContext.drawing){
+        vertices_end -= DrawContext.command.vertices_count;
+        vertices_left = DrawContext.command.vertices_count;
     }
     glBufferSubData(GL_ARRAY_BUFFER, vertices_start, sizeof(Vertex) * vertices_end, vertex_buffer);
 
@@ -348,7 +348,7 @@ void init_renderer(void){
     glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
     glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
 
-    set_default_uniforms(&ImmediateDrawContext.uniforms);
+    set_default_uniforms(&DrawContext.uniforms);
 
     GLuint error;
     while(error = glGetError(), error)
@@ -378,12 +378,12 @@ void set_simple_quad(f32 x, f32 y, f32 w, f32 h){
     set_vertex(Vec2(x + w, y + h));
 }
 
-void immediate_draw_rect(f32 x, f32 y, f32 w, f32 h, Vec4 color){
-    immediate_begin(DRAW_TRIANGLE);
+void draw_rect(f32 x, f32 y, f32 w, f32 h, Vec4 color){
+    draw_begin(DRAW_TRIANGLE);
     set_shader(&PrimitiveShader);
     set_color(color);
     set_simple_quad(x, y, w, h);
-    immediate_end();
+    draw_end();
 }
 
 static inline b32 is_same_draw_command(const DrawCommand *a, const DrawCommand *b){
@@ -401,7 +401,7 @@ static inline b32 is_same_draw_command(const DrawCommand *a, const DrawCommand *
 }
 
 static void enqueue_render_command(void){
-    const T_ImmediateDrawContext *context = &ImmediateDrawContext;
+    const T_DrawContext *context = &DrawContext;
     if(BatchList.count >= array_size(BatchList.batchs))
         execute_draw_commands();
 
@@ -413,8 +413,8 @@ static void enqueue_render_command(void){
     }
 }
 
-void immediate_begin(i32 primitive){
-    T_ImmediateDrawContext *context = &ImmediateDrawContext;
+void draw_begin(i32 primitive){
+    T_DrawContext *context = &DrawContext;
     assert(!context->drawing);
     context->drawing = true;
     context->texture_coord = Vec2(0, 0);
@@ -425,8 +425,8 @@ void immediate_begin(i32 primitive){
     context->command.shader_context = &PrimitiveShader;
 }
 
-void immediate_end(void){
-    T_ImmediateDrawContext *context = &ImmediateDrawContext;
+void draw_end(void){
+    T_DrawContext *context = &DrawContext;
     assert(context->drawing);
     assert(context->command.vertices_count % 3 == 0);
     context->command.uniforms = context->uniforms;
@@ -435,36 +435,36 @@ void immediate_end(void){
 }
 
 void set_color(Vec4 color){
-    T_ImmediateDrawContext *context = &ImmediateDrawContext;
+    T_DrawContext *context = &DrawContext;
     assert(context->drawing);
     context->color = color;
 }
 
 void set_texture_coord(Vec2 coord){
-    T_ImmediateDrawContext *context = &ImmediateDrawContext;
+    T_DrawContext *context = &DrawContext;
     assert(context->drawing);
     context->texture_coord = coord;
 }
 
 void set_texture(u32 texture){
-    T_ImmediateDrawContext *context = &ImmediateDrawContext;
+    T_DrawContext *context = &DrawContext;
     assert(context->drawing);
     context->command.tex_id = texture;
 }
 
 void set_shader(ShaderContext *shader){
-    T_ImmediateDrawContext *context = &ImmediateDrawContext;
+    T_DrawContext *context = &DrawContext;
     assert(context->drawing);
     context->command.shader_context = shader;
 }
 
 void set_vertex(Vec2 pos){
-    T_ImmediateDrawContext *context = &ImmediateDrawContext;
+    T_DrawContext *context = &DrawContext;
     assert(context->drawing);
     
     if(vertex_count > array_size(vertex_buffer)){
         execute_draw_commands();
-        assert(vertex_count < array_size(vertex_buffer)); // trying to draw something really big or forggot to call immediate_end
+        assert(vertex_count < array_size(vertex_buffer)); // trying to draw something really big or forggot to call draw_end
     }
 
     context->command.vertices_count++;
@@ -479,19 +479,19 @@ void set_vertex(Vec2 pos){
     current->color[3] = context->color.w;
 }
 
-void immediate_draw_texture(float x, float y, f32 scale, TextureInfo tex){
+void draw_texture(float x, float y, f32 scale, TextureInfo tex){
     f32 w = roundf(tex.width  * scale);
     f32 h = roundf(tex.height * scale);
     
-    immediate_begin(DRAW_TRIANGLE);
+    draw_begin(DRAW_TRIANGLE);
     set_texture(tex.id);
     set_shader(&TextureShader);
     set_color(White_v4);
     set_simple_quad(x, y, w, h);
-    immediate_end();
+    draw_end();
 }
 
-void immediate_draw_sprite(float x0, float y0, f32 scale, Vec4 color, Sprite sprite){
+void draw_sprite(float x0, float y0, f32 scale, Vec4 color, Sprite sprite){
     f32 x1 = x0 + sprite.w * scale;
     f32 y1 = y0 + sprite.h * scale;
 
@@ -500,7 +500,7 @@ void immediate_draw_sprite(float x0, float y0, f32 scale, Vec4 color, Sprite spr
     f32 tex_y0 = 1.0f - (f32)(sprite.y + sprite.h) / sprite.atlas.height;
     f32 tex_y1 = 1.0f - (f32)sprite.y / sprite.atlas.height;
 
-    immediate_begin(DRAW_TRIANGLE);
+    draw_begin(DRAW_TRIANGLE);
     set_shader(&TextureShader);
     set_color(color);
     set_texture(sprite.atlas.id);
@@ -523,11 +523,11 @@ void immediate_draw_sprite(float x0, float y0, f32 scale, Vec4 color, Sprite spr
     set_texture_coord(Vec2(tex_x0, tex_y1));
     set_vertex(Vec2(x0, y0));
 
-    immediate_end();
+    draw_end();
 }
 
 void set_uv_matrix(const float *matrix3x3){
-    T_ImmediateDrawContext *context = &ImmediateDrawContext;
+    T_DrawContext *context = &DrawContext;
     memcpy(context->uniforms.uv_matrix, matrix3x3, sizeof(context->uniforms.uv_matrix));
 }
 

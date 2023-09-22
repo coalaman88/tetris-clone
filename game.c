@@ -244,7 +244,7 @@ void set_piece(i32 x, i32 y, const Piece *p){
 }
 
 void draw_tile(i32 x, i32 y, Vec4 color, Sprite sprite){
-    immediate_draw_sprite((f32)x * BlockSize, (f32)y * BlockSize, 1.0f, color, sprite);
+    draw_sprite((f32)x * BlockSize, (f32)y * BlockSize, 1.0f, color, sprite);
 }
 
 void draw_piece(i32 p_x, i32 p_y, const Piece *piece){
@@ -263,7 +263,7 @@ void draw_piece_free(f32 p_x, f32 p_y, const Piece *piece){
         for(i32 x = 0; x < piece->side; x++){
             if(piece->bitmap[y * piece->side + x]){
                 Vec4 color = get_piece_color(piece->type);
-                immediate_draw_sprite(p_x + x * BlockSize, p_y + y * BlockSize, 1.0f, color, PieceSprite);
+                draw_sprite(p_x + x * BlockSize, p_y + y * BlockSize, 1.0f, color, PieceSprite);
             }
         }
     }
@@ -558,7 +558,7 @@ void draw_statistics(i32 x, i32 y){
 
     draw_text(x * BlockSize, (y - 1) * BlockSize, White_v4, "Score:%d", Score);
     Vec4 panel_color = Vec4(0.2f, 0.2f, 0.2f, 1.0f);
-    immediate_draw_rect(x * BlockSize, y * BlockSize, w * BlockSize, h * BlockSize, panel_color);
+    draw_rect(x * BlockSize, y * BlockSize, w * BlockSize, h * BlockSize, panel_color);
     //draw_piece(x + 1, y + 1, &Aim.next_piece);
     f32 center_x = x + (w - Aim.next_piece.side) * 0.5f;
     f32 center_y = y + (h - Aim.next_piece.side) * 0.5f;
@@ -660,7 +660,7 @@ void prompt(void){
     b32 this = confirmation_prompt_cursor;
     Vec4 color = Black_v4;
     color.w = 0.3f;
-    immediate_draw_rect(0, 0, WWIDTH, WHEIGHT, color);
+    draw_rect(0, 0, WWIDTH, WHEIGHT, color);
     draw_centered_text(center_x, center_y + line_space * line++, Red_v4, "Reset game?");
     draw_centered_text(center_x, center_y + line_space * line++, this == 0? White_v4 : brightness(White_v4, 0.3f), "NO");
     draw_centered_text(center_x, center_y + line_space * line++, this == 1? White_v4 : brightness(White_v4, 0.3f), "YES");
@@ -750,7 +750,7 @@ void game_running(void){
                     set_piece(m_x - 1, m_y - 1, piece);
                 draw_piece(t_x + m_x - 1, t_y + m_y - 1, piece);
             } else if(Debug.mode == paint){
-                immediate_draw_rect((f32)(Mouse.x - Mouse.x % (i32)BlockSize), (f32)(Mouse.y - Mouse.y % (i32)BlockSize), BlockSize, BlockSize, Red_v4);
+                draw_rect((f32)(Mouse.x - Mouse.x % (i32)BlockSize), (f32)(Mouse.y - Mouse.y % (i32)BlockSize), BlockSize, BlockSize, Red_v4);
                 if(Mouse.left.state && !StreakOn)
                     Grid[m_y][m_x] = 1;
                 else if(Mouse.right.state && !StreakOn)

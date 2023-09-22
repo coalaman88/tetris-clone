@@ -116,7 +116,7 @@ void render_glyph(GlyphInfo g, f32 x, f32 y, Vec4 color){
     x += g.offset.x;
     y += CurrentFont->line_height - g.offset.y;
     Sprite glyph = {.x = g.atlas.x, .y = g.atlas.y, .w = g.w, .h = g.h, .atlas = CurrentFont->atlas};
-    immediate_draw_sprite(x, y, 1.0f, color, glyph);
+    draw_sprite(x, y, 1.0f, color, glyph);
 }
 
 i32 count_glyphs_advance(const char *string){
