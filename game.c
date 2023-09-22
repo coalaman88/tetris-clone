@@ -17,6 +17,7 @@
 
 Font BigFont;
 Font DefaultFont;
+Font DebugFont; // @Debug
 
 i32 StreakOn = false;
 f32 StreakTimer = 0;
@@ -327,18 +328,23 @@ b32 highscore_placement(i32 score, const Scoreboard *board){
 // BUGS
 // input diagonal moviment
 
+Font load_system_font(const char *name, i32 font_size){
+    char font_path[256] = {0};
+    os_font_path(font_path, sizeof(font_path), "\\Fonts\\");
+    b32 result = strcat_s(font_path, array_size(font_path), name) == 0;
+    assert(result);
+    printf("font: %s\n", font_path);
+    return load_font(font_path, font_size);
+}
+
 void EngineInit(void){
     b32 result;
     init_renderer();
     init_fonts();
     
-    char font_path[256] = {0};
-    os_font_path(font_path, array_size(font_path));
-    result = strcat_s(font_path, array_size(font_path), "\\Arial.ttf") == 0;
-    assert(result);
-    
-    load_font(font_path, 36, &BigFont);
-    load_font(font_path, 20, &DefaultFont);
+    BigFont     = load_system_font("Arial.ttf", 36);
+    DefaultFont = load_system_font("Arial.ttf", 20);
+    DebugFont   = load_system_font("Consola.ttf", 16);
     set_font(&DefaultFont);
 
     Aim.next_piece = random_piece();
@@ -804,8 +810,11 @@ void EngineUpdate(void){
         pressed_timer += TimeElapsed;
     }
 
-    //draw_text(WWIDTH - 100.0f, 0, White_v4, "FPS:%u", FramesPerSec);    
+
+    show_rederer_debug_info(0, 0);
     execute_draw_commands();
+    FrameDrawCallsCount = 0;
+    FrameVertexCount    = 0;
 }
 
 void EngineDraw(void){

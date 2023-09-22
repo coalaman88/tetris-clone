@@ -44,6 +44,11 @@ void draw_rect(f32 x1, f32 y1, f32 w, f32 h, Vec4 color);
 void clear_screen(Vec4 color);
 Vec4 brightness(Vec4 color, f32 scaler);
 
+// @Debug
+extern i32 FrameVertexCount;
+extern i32 FrameDrawCallsCount;
+void show_rederer_debug_info(f32 x, f32 y);
+
 // Font
 typedef struct{
     char character;
@@ -61,10 +66,11 @@ typedef struct{
 
 extern Font BigFont;
 extern Font DefaultFont;
+extern Font DebugFont; // @Debug
 extern Font *CurrentFont;
 
 void init_fonts(void);
-void load_font(const char *name, i32 height_pixel_size, Font *font);
+Font load_font(const char *name, i32 height_pixel_size);
 void set_font(Font *font);
 
 i32 draw_text(f32 x, f32 y, Vec4 color, const char *format, ...);

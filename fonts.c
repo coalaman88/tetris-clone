@@ -66,7 +66,7 @@ GlyphInfo append_glyph_on_atlas(GlyphAtlas *atlas, u32 unicode, FT_Face face){
     return g;
 }
 
-void load_font(const char *name, i32 height_pixel_size, Font *font){
+Font load_font(const char *name, i32 height_pixel_size){
     FT_Face face;
     u32 ft_error;
 
@@ -89,17 +89,19 @@ void load_font(const char *name, i32 height_pixel_size, Font *font){
 
     FT_Set_Pixel_Sizes(face, 0, height_pixel_size);
 
+    Font font;
     for(i32 c = 0; c < 0xff; c++){ // loading all ascii characters
-        font->glyphs[c] = append_glyph_on_atlas(&atlas, c, face);
+        font.glyphs[c] = append_glyph_on_atlas(&atlas, c, face);
     }
 
-    font->atlas.id = create_texture_from_bitmap((u8*)atlas.buffer, atlas.width, atlas.height);
-    font->line_height  = height_pixel_size;
-    font->atlas.width  = atlas.width;
-    font->atlas.height = atlas.height;
+    font.atlas.id = create_texture_from_bitmap((u8*)atlas.buffer, atlas.width, atlas.height);
+    font.line_height  = height_pixel_size;
+    font.atlas.width  = atlas.width;
+    font.atlas.height = atlas.height;
 
     free(atlas.buffer); // TODO use memory arena
     FT_Done_Face(face);
+    return font;
 }
 
 void set_font(Font *font){

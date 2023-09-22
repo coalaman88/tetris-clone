@@ -63,8 +63,12 @@ struct S_ShaderContext TextureShader;
 
 static GLuint vertex_array_obj, vertex_buffer_obj;
 
-static Vertex vertex_buffer[60000];
-static i32 vertex_count = 0;
+static Vertex VertexBuffer[1024 * 6];
+static i32 VertexCount = 0;
+
+// @Debug
+i32 FrameVertexCount = 0;
+i32 FrameDrawCallsCount = 0;
 
 typedef struct{
     i32 sample_tex;
@@ -82,7 +86,7 @@ typedef struct{
 }DrawCommand;
 
 static struct{
-    DrawCommand batchs[124];
+    DrawCommand batchs[32];
     DrawCommand *current;
     i32 count;
 }BatchList;
@@ -106,10 +110,11 @@ T_DrawContext DrawContext = {0};
 static GLuint create_program(HANDLE vert_file, HANDLE frag_file);
 static b32 compile_shader(GLuint shader);
 
-static void init_batchs(i32 vertices_left){
+static void reset_draw_batchs(i32 vertices_left){
+    set_zero(BatchList.batchs, sizeof(DrawCommand) * BatchList.count);
     BatchList.count = 0;
     BatchList.current = NULL;
-    vertex_count = vertices_left;
+    VertexCount = vertices_left;
 }
 
 static inline void use_shader_context(ShaderContext *context){
@@ -164,6 +169,7 @@ static void set_default_uniforms(Uniforms *uniforms){
     };
 
     uniforms->sample_tex = 0;
+    set_zero(uniforms, sizeof(Uniforms)); // clean padding
     memcpy(uniforms->uv_matrix, uv_matrix, sizeof(uv_matrix));
     memcpy(uniforms->ident_matrix, ident_matrix, sizeof(ident_matrix));
     memcpy(uniforms->translation_matrix, translation_matrix, sizeof(translation_matrix));
@@ -185,17 +191,25 @@ void update_shader_uniforms(u32 program, const Uniforms *uniforms){
     glUniform1i(location, uniforms->sample_tex);
 }
 
+void show_rederer_debug_info(f32 x, f32 y){
+    set_font(&DebugFont);
+    draw_text(x, y, Yellow_v4, "Vertex: %d DrawCalls: %d", FrameVertexCount, BatchList.count + FrameDrawCallsCount);
+    set_font(&DefaultFont);
+}
+
 void execute_draw_commands(void){
     i32 vertices_start = 0;
-    i32 vertices_end   = vertex_count;
+    i32 vertices_end   = VertexCount;
     i32 vertices_left  = 0;
     
     if(DrawContext.drawing){
         vertices_end -= DrawContext.command.vertices_count;
         vertices_left = DrawContext.command.vertices_count;
     }
-    glBufferSubData(GL_ARRAY_BUFFER, vertices_start, sizeof(Vertex) * vertices_end, vertex_buffer);
+    glBufferSubData(GL_ARRAY_BUFFER, vertices_start, sizeof(Vertex) * vertices_end, VertexBuffer);
 
+    // @Debug
+    FrameDrawCallsCount += BatchList.count;
     for(i32 i = 0; i < BatchList.count; i++){
         DrawCommand *batch = &BatchList.batchs[i];
         assert(batch->type && batch->shader_context);
@@ -208,11 +222,15 @@ void execute_draw_commands(void){
     }
 
     if(vertices_left){
-        assert(false);
+        // @Debug @Remove
+        printf("\nWARNING!!!\n");
+        printf("Scene using too much vetices!\n");
+
         i32 size  = sizeof(Vertex) * vertices_left;
-        memmove(vertex_buffer, vertex_buffer + vertices_end, size);
+        memmove(VertexBuffer, VertexBuffer + vertices_end, size);
     }
-    init_batchs(vertices_left);
+
+    reset_draw_batchs(vertices_left);
 }
 
 u32 create_texture_from_bitmap(u8 *data, i32 width, i32 height){
@@ -326,7 +344,7 @@ void init_renderer(void){
 
     glGenBuffers(1, &vertex_buffer_obj);
     glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_obj);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertex_buffer), NULL, GL_STREAM_DRAW); // Copy buffer
+    glBufferData(GL_ARRAY_BUFFER, sizeof(VertexBuffer), NULL, GL_STREAM_DRAW); // Copy buffer
 
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));      // This only tell opengl what is what in
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, texture_coord)); // the buffer!
@@ -348,13 +366,13 @@ void init_renderer(void){
     glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
     glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
 
+    set_zero(&BatchList, sizeof(BatchList));
     set_default_uniforms(&DrawContext.uniforms);
 
     GLuint error;
     while(error = glGetError(), error)
         printf("Error:%x\n", error);
 
-    init_batchs(0);
     stbi_set_flip_vertically_on_load(true);
 }
 
@@ -386,18 +404,20 @@ void draw_rect(f32 x, f32 y, f32 w, f32 h, Vec4 color){
     draw_end();
 }
 
-static inline b32 is_same_draw_command(const DrawCommand *a, const DrawCommand *b){
-    if(!a || !b) return false;
-    if(a->type != b->type) return false;
-    if(a->tex_id != b->tex_id) return false;
-    if(a->shader_context != b->shader_context) return false;
+static inline b32 draw_command_is_mergeable(const DrawCommand *current, const DrawCommand *new){
+    assert(new);
+    if(!current) return false;
+
+    b32 result = (
+        (current->type == new->type) &
+        (current->tex_id == new->tex_id) &
+        (current->shader_context == new->shader_context)
+    );
+    if(!result) return false;
     
-    const Uniforms *ua = &a->uniforms;
-    const Uniforms *ub = &b->uniforms;
-    if(ua->sample_tex != ub->sample_tex) return false;
-    if(memcmp(ua->uv_matrix, ub->uv_matrix, sizeof(ua->uv_matrix)) != 0) return false;
-    if(memcmp(ua->translation_matrix, ub->translation_matrix, sizeof(ua->translation_matrix)) != 0) return false;
-    return true;
+    // Note: Ensure all Uniforms are initialized to zero.
+    // The undefined behavior of paddings can cause this memcmp to trigger!
+    return memcmp(&current->uniforms, &new->uniforms, sizeof(Uniforms)) == 0;
 }
 
 static void enqueue_render_command(void){
@@ -405,7 +425,7 @@ static void enqueue_render_command(void){
     if(BatchList.count >= array_size(BatchList.batchs))
         execute_draw_commands();
 
-    if(!is_same_draw_command(BatchList.current, &context->command)){
+    if(!draw_command_is_mergeable(BatchList.current, &context->command)){
         BatchList.current  = BatchList.batchs + BatchList.count++;
         *BatchList.current = context->command;
     } else{
@@ -429,6 +449,7 @@ void draw_end(void){
     T_DrawContext *context = &DrawContext;
     assert(context->drawing);
     assert(context->command.vertices_count % 3 == 0);
+    FrameVertexCount += context->command.vertices_count; // @Debug
     context->command.uniforms = context->uniforms;
     enqueue_render_command();
     context->drawing = false;
@@ -462,13 +483,13 @@ void set_vertex(Vec2 pos){
     T_DrawContext *context = &DrawContext;
     assert(context->drawing);
     
-    if(vertex_count > array_size(vertex_buffer)){
+    if(VertexCount >= array_size(VertexBuffer)){
         execute_draw_commands();
-        assert(vertex_count < array_size(vertex_buffer)); // trying to draw something really big or forggot to call draw_end
+        assert(VertexCount < array_size(VertexBuffer)); // trying to draw something really big or forggot to call draw_end
     }
 
     context->command.vertices_count++;
-    Vertex *current = &vertex_buffer[vertex_count++];
+    Vertex *current = &VertexBuffer[VertexCount++];
     current->position[0] = pos.x;
     current->position[1] = pos.y;
     current->texture_coord[0] = context->texture_coord.x;

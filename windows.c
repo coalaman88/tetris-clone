@@ -408,12 +408,13 @@ void FreeFile(void *mem){
     VirtualFree(mem, 0, MEM_RELEASE);
 }
 
-void os_font_path(char *buffer, u32 size){
+char* os_font_path(char *buffer, u32 size, const char *append){
     buffer[0] = 0;
     ExpandEnvironmentStringsA("%windir%", buffer, size);
     assert(buffer[0]);
-    i32 result = strcat_s(buffer, size, "\\Fonts") == 0;
+    i32 result = strcat_s(buffer, size, append) == 0;
     assert(result);
+    return buffer;
 }
 
 Date os_get_local_time(void){
