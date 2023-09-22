@@ -194,15 +194,12 @@ void enqueue_message(Vec4 color, const char *format, ...){
 
 void rotate_piece(Piece *piece, i32 dir){
     Piece original = *piece;
-
     for(i32 y = 0; y < piece->side; y++){
         for(i32 x = 0; x < piece->side; x++){
-            if(dir == -1)
+            if(dir < 0)
                 piece->bitmap[y * piece->side + x] = original.bitmap[x * original.side + original.side - 1 - y];
-            else if(dir == 1)
-                piece->bitmap[y * piece->side + (piece->side - 1 - x)] = original.bitmap[x * original.side + y];
             else
-                assert(false);
+                piece->bitmap[y * piece->side + (piece->side - 1 - x)] = original.bitmap[x * original.side + y];
         }
     }
 }
@@ -215,7 +212,7 @@ static inline Vec4 get_piece_color(i32 piece_type){
 b32 piece_collided(i32 x, i32 y, const Piece *piece);
 
 Piece random_piece(void){
-    return *Pieces[random_n(array_size(Pieces) - 1)];
+    return *Pieces[random_n(array_size(Pieces))];
 }
 
 void spawn_next_piece(void){
@@ -224,7 +221,7 @@ void spawn_next_piece(void){
     Aim.piece_setted = false;
     PieceStatistics[Aim.piece.type - 1]++;
 
-    Aim.x = random_n(GridW - Aim.piece.side);
+    Aim.x = (GridW - Aim.piece.side) / 2;
     Aim.y = 0;
 }
 
@@ -256,6 +253,17 @@ void draw_piece(i32 p_x, i32 p_y, const Piece *piece){
             if(piece->bitmap[y * piece->side + x]){
                 Vec4 color = get_piece_color(piece->type);
                 draw_tile(p_x + x, p_y + y, color, PieceSprite);
+            }
+        }
+    }
+}
+
+void draw_piece_free(f32 p_x, f32 p_y, const Piece *piece){
+    for(i32 y = 0; y < piece->side; y++){
+        for(i32 x = 0; x < piece->side; x++){
+            if(piece->bitmap[y * piece->side + x]){
+                Vec4 color = get_piece_color(piece->type);
+                immediate_draw_sprite(p_x + x * BlockSize, p_y + y * BlockSize, 1.0f, color, PieceSprite);
             }
         }
     }
@@ -546,12 +554,15 @@ void restart_game(b32 clear_grid){
 
 void draw_statistics(i32 x, i32 y){
     i32 w = 5;
-    i32 h = 5;
+    i32 h = 4;
 
     draw_text(x * BlockSize, (y - 1) * BlockSize, White_v4, "Score:%d", Score);
     Vec4 panel_color = Vec4(0.2f, 0.2f, 0.2f, 1.0f);
     immediate_draw_rect(x * BlockSize, y * BlockSize, w * BlockSize, h * BlockSize, panel_color);
-    draw_piece(x + 1, y + 1, &Aim.next_piece);
+    //draw_piece(x + 1, y + 1, &Aim.next_piece);
+    f32 center_x = x + (w - Aim.next_piece.side) * 0.5f;
+    f32 center_y = y + (h - Aim.next_piece.side) * 0.5f;
+    draw_piece_free(center_x * (f32)BlockSize, center_y * (f32)BlockSize, &Aim.next_piece);
 
     i32 b_y = 1;
     i32 b_x = 2;

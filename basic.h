@@ -206,15 +206,15 @@ u64 random_u64(void){
 }
 
 i64 random_i64(void){
-    return (i64)(random_u64() & 0x7fffffffffffffff);
+    return (i64)(random_u64() & MAXi64);
 }
 
 i32 random_u32(void){
-    return random_u64() & 0xffffffff;
+    return random_u64() & MAXu32;
 }
 
 i32 random_i32(void){
-    return (i32)(random_u64() & 0x7ffffff);
+    return (i32)(random_u64() & MAXi32);
 }
 
 i32 random_in(i32 a, i32 b){
@@ -222,8 +222,8 @@ i32 random_in(i32 a, i32 b){
     return a + random_i32() % len;
 }
 
-u32 random_n(u32 max){
-    return random_u32() % (max + 1);
+u32 random_n(u32 exclusive_max){
+    return random_u32() % exclusive_max;
 }
 
 #endif
