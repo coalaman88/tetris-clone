@@ -43,6 +43,8 @@ void draw_rect(f32 x1, f32 y1, f32 w, f32 h, Vec4 color);
 
 void clear_screen(Vec4 color);
 Vec4 brightness(Vec4 color, f32 scaler);
+Vec4 vec4_color(u32 hex);
+Color rgba_color(Vec4 color);
 
 // @Debug
 extern i32 FrameVertexCount;
@@ -50,17 +52,19 @@ extern i32 FrameDrawCallsCount;
 void show_rederer_debug_info(f32 x, f32 y);
 
 // Font
+
+#define ASCII_TABLE_SIZE 128
+
 typedef struct{
-    char character;
-    i32 w, h;
     i32 advance;
-    struct {i32 x, y;}offset; // FIXME Vec2i?
-    struct {i32 x, y;}atlas; // FIXME Vec2i?
+    i32 w, h;
+    struct {i32 x, y;}offset;
+    struct {i32 x, y;}atlas;
 }GlyphInfo;
 
 typedef struct{
     TextureInfo atlas;
-    GlyphInfo glyphs[0xff]; // ascii characters
+    GlyphInfo glyphs[ASCII_TABLE_SIZE];
     i32 line_height; // not precise
 }Font;
 

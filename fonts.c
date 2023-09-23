@@ -15,32 +15,27 @@ typedef struct{
     u32 height_left;
     u32 row_width_left;
     u32 row_break;
-
-    u32 size;
     u32 *buffer;
-}GlyphAtlas;
+}GlyphAtlasContext;
 
 Font *CurrentFont = NULL;
 
-GlyphInfo append_glyph_on_atlas(GlyphAtlas *atlas, u32 unicode, FT_Face face){
-
-    u32 glyph_index = FT_Get_Char_Index(face, unicode);
-    u32 ft_error = FT_Load_Glyph(face, glyph_index, FT_LOAD_RENDER);
+GlyphInfo append_glyph_on_atlas(GlyphAtlasContext *atlas, u32 char_index, FT_Face face){
+    u32 ft_error = FT_Load_Glyph(face, char_index, FT_LOAD_RENDER);
     assert(!ft_error);
 
     FT_Bitmap bitmap = face->glyph->bitmap;
-    //FT_Glyph_Metrics metrics = Face->glyph->metrics;
-
-    if(bitmap.rows >= atlas->height_left){
-        printf("not enough space in font atlas!\n");
-        assert(false);
-    }
 
     if(bitmap.width >= atlas->row_width_left){
         assert(atlas->height_left > atlas->row_break);
         atlas->height_left -= atlas->row_break;
         atlas->row_break = 0;
         atlas->row_width_left = atlas->width;
+    }
+
+    if(bitmap.rows >= atlas->height_left){
+        printf("not enough space in font atlas!\n");
+        assert(false);
     }
 
     for(u32 y = 0; y < bitmap.rows; y++){
@@ -77,21 +72,33 @@ Font load_font(const char *name, i32 height_pixel_size){
     assert(!ft_error);
 
     // Init atlas
-    const u32 atlas_size = 512;
-    GlyphAtlas atlas;
-    atlas.width  = atlas_size;
-    atlas.height = atlas_size;
-    atlas.row_width_left = atlas_size;
-    atlas.height_left = atlas_size;
-    atlas.row_break   = 0;
-    atlas.size = atlas.width * atlas.height;
-    atlas.buffer = realloc(NULL, atlas.size * sizeof(u32));
+    const u32 atlas_size  = 256;
+    GlyphAtlasContext atlas = {
+        .width = atlas_size,
+        .height = atlas_size,
+        .row_width_left = atlas_size,
+        .height_left = atlas_size,
+        .row_break = 0,
+        .buffer = malloc(atlas.width * atlas.height * sizeof(u32)),
+    };
+
+    Color color = rgba_color(Vec4(1, 1, 1, .2f));
+    for(u32 i = 0; i < atlas.width * atlas.height; i++){
+        atlas.buffer[i] = color.u;
+    }
 
     FT_Set_Pixel_Sizes(face, 0, height_pixel_size);
-
     Font font;
-    for(i32 c = 0; c < 0xff; c++){ // loading all ascii characters
-        font.glyphs[c] = append_glyph_on_atlas(&atlas, c, face);
+
+    // load null char
+    u32 char_index = FT_Get_Char_Index(face, 0);
+    font.glyphs[0] = append_glyph_on_atlas(&atlas, char_index, face);
+
+    for(i32 c = 1; c < ASCII_TABLE_SIZE; c++){ // loading all ascii characters
+        char_index = FT_Get_Char_Index(face, c);
+        font.glyphs[c] = char_index
+            ? append_glyph_on_atlas(&atlas, char_index, face)
+            : font.glyphs[0];
     }
 
     font.atlas.id = create_texture_from_bitmap((u8*)atlas.buffer, atlas.width, atlas.height);
@@ -99,7 +106,7 @@ Font load_font(const char *name, i32 height_pixel_size){
     font.atlas.width  = atlas.width;
     font.atlas.height = atlas.height;
 
-    free(atlas.buffer); // TODO use memory arena
+    free(atlas.buffer);
     FT_Done_Face(face);
     return font;
 }

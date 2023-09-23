@@ -333,7 +333,6 @@ Font load_system_font(const char *name, i32 font_size){
     os_font_path(font_path, sizeof(font_path), "\\Fonts\\");
     b32 result = strcat_s(font_path, array_size(font_path), name) == 0;
     assert(result);
-    printf("font: %s\n", font_path);
     return load_font(font_path, font_size);
 }
 
@@ -380,12 +379,6 @@ static inline Vec4 invert_color(Vec4 color){
     return Vec4(1.0f - color.x, 1.0f - color.y, 1.0f - color.z, color.w);
 }
 
-Vec4 hex_color(u32 hex){
-    Color c = {.u = hex};
-    Vec4 v  = {(f32)c.r / 255.0f, (f32)c.g / 255.0f, (f32)c.b / 255.0f, (f32)c.a / 255.0f};
-    return v;
-}
-
 const f32 first_repeat_delay   = 0.25f;
 const f32 secound_repeat_delay = 0.065f;
 
@@ -405,8 +398,8 @@ b32 key_repeat(Key *k){
 }
 
 void draw_background(i32 t_x, i32 t_y){
-    const Vec4 bg_color0 = hex_color(0x202020ff);
-    const Vec4 bg_color1 = hex_color(0x303030ff);
+    const Vec4 bg_color0 = vec4_color(0xff202020);
+    const Vec4 bg_color1 = vec4_color(0xff303030);
 
     i32 offset = 0;
     for(i32 y = t_y; y < t_y + GridH; y++){
@@ -810,7 +803,7 @@ void EngineUpdate(void){
         pressed_timer += TimeElapsed;
     }
 
-
+    // @Debug
     show_rederer_debug_info(0, 0);
     execute_draw_commands();
     FrameDrawCallsCount = 0;

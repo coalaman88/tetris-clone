@@ -150,11 +150,9 @@ typedef union{
     u32 u;
     u8 channel[4];
     struct{
-        u8 a, b, g, r;
+        u8 r, g, b, a;
     };
 }Color;
-
-#define Color(R, G, B, A) {.channel = {(A)*255, (R)*255, (G)*255, (B)*255}}
 
 typedef struct{
     i32 x, y;

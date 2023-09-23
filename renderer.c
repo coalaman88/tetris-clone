@@ -242,6 +242,7 @@ u32 create_texture_from_bitmap(u8 *data, i32 width, i32 height){
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glBindTexture(GL_TEXTURE_2D, 0);
     return id;
 }
 
@@ -565,3 +566,18 @@ Vec4 brightness(Vec4 color, f32 scaler){
     return color;
 }
 
+Vec4 vec4_color(u32 hex){
+    Color c = {.u = hex};
+    Vec4 v  = {(f32)c.r / 255.0f, (f32)c.g / 255.0f, (f32)c.b / 255.0f, (f32)c.a / 255.0f};
+    return v;
+}
+
+Color rgba_color(Vec4 color){
+    Color c = {
+        .r = (u8)(color.x * 255.0f + .5f),
+        .g = (u8)(color.y * 255.0f + .5f),
+        .b = (u8)(color.z * 255.0f + .5f),
+        .a = (u8)(color.w * 255.0f + .5f),
+    };
+    return c;
+}
