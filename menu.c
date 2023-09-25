@@ -74,16 +74,11 @@ b32 save_highscore_to_disk(const char *file_name, Scoreboard *scoreboard){
 }
 
 static void move_cursor(i32 *cursor, i32 max){
-    i32 pos = *cursor;
-    if(KeyPressed(Keyboard.s)){
-        pos++;
-        if(pos > max) pos = 0;
-    }
-    if(KeyPressed(Keyboard.w)){
-        pos--;
-        if(pos < 0) pos = max;
-    }
-    *cursor = pos;
+    if(button_pressed(Controls.down))
+        *cursor += 1;
+    else if(button_pressed(Controls.up))
+        *cursor -= 1;
+    warpi(cursor, 0, max);
 }
 
 void open_menu(i32 destination){ // TODO save the cursor position in the stack?
@@ -105,12 +100,12 @@ static void close_menu(void){
     MenuScreen = menu_stack[--menu_stack_top];
 }
 
-void main_menu(void){
+static void main_menu(void){
 
     const i32 max_y = 3;
     move_cursor(&main_cursor_y, max_y);
 
-    if(KeyPressed(Keyboard.enter)){
+    if(key_pressed(Keyboard.enter)){
         if(main_cursor_y == 0){        // start game
             GameMode = GM_Running;
         } else if(main_cursor_y == 1){ // heighsocre
@@ -176,13 +171,13 @@ void init_highscore_menu_in_insert_mode(i32 board_position){
     open_menu(S_Highscore);
 }
 
-void highscore_menu(void){
+static void highscore_menu(void){
     // TODO
     // Option to clear highscore from game
 
     struct S_HighScoreMenuState *state = &HighScoreMenuState;
     
-    if(KeyPressed(Keyboard.esc) && !state->insert_mode_on)
+    if(key_pressed(Keyboard.esc) && !state->insert_mode_on)
         close_menu();
 
     // draw
@@ -194,7 +189,7 @@ void highscore_menu(void){
 
         draw_centered_text(x, y + spacing_y * y_pen++, Blue_v4, "-Scoreboard-");
 
-        if(KeyPressed(Keyboard.enter) && state->insert_mode_on){
+        if(key_pressed(Keyboard.enter) && state->insert_mode_on){
             if(strcmp(state->new_name.buffer, "_") != 0){
                 ScoreInfo *info = &HighScore.score[state->insert_board_index];
                 strcpy_s(info->name, array_size(info->name), state->new_name.buffer);
@@ -209,14 +204,14 @@ void highscore_menu(void){
         if(state->insert_mode_on){
             if(state->new_name.count < array_size(state->new_name.buffer) - 1){
                 for(i32 i = 0; i < 'z' - 'a'; i++){
-                    if(KeyPressed(Keyboard.keys[i])){
+                    if(key_pressed(Keyboard.keys[i])){
                         state->new_name.buffer[state->new_name.count++] = 'a' + (char)i;
                         break;
                     }
                 }
             }
 
-            if(KeyPressed(Keyboard.back_space) && state->new_name.count > 0){
+            if(key_pressed(Keyboard.back_space) && state->new_name.count > 0){
                 i32 i = --state->new_name.count;
                 state->new_name.buffer[i] = 0;
             }
@@ -238,28 +233,16 @@ void highscore_menu(void){
     }
 }
 
-void settings_menu(void){
-    if(KeyPressed(Keyboard.esc))
-        close_menu();
-
-    // draw
-    {
-        const f32 x = WWIDTH  / 2.0f;
-        const f32 y = WHEIGHT / 3.0f;
-        draw_centered_text(x, y, Red_v4, "Nothing Here!");
-    }
-}
-
-void pause_menu(void){
+static void pause_menu(void){
     const i32 max_y = 3;
     move_cursor(&pause_cursor_y, max_y);
 
-    if(KeyPressed(Keyboard.esc)){
+    if(key_pressed(Keyboard.esc)){
         pause_cursor_y = 0;
         close_menu();
     }
 
-    if(KeyPressed(Keyboard.enter)){
+    if(key_pressed(Keyboard.enter)){
         switch(pause_cursor_y){
             case 0: open_menu(S_Settings); break; // settings menu
             case 1: close_menu(); break; // resume game
@@ -285,8 +268,60 @@ void pause_menu(void){
     }
 }
 
-void menu(void){
+static void draw_settings_option(f32 x, f32 y, b32 in_focus, b32 waiting_remap, i32 key_code, const char *text){
+    Vec4 color = in_focus? (waiting_remap? Green_v4 : White_v4) : Vec4(1.0f, 1.0f, 1.0f, 0.3f);
+    draw_centered_text(x, y, color, "%s %s", text, KeyNames[key_code]);
+}
 
+static void settings_menu(void){
+    static i32 waiting_remap = false;
+    static i32 cursor_y = 0;
+    i32 opetions_count = 4;
+
+    if(key_pressed(Keyboard.esc)){
+        waiting_remap = false;
+        close_menu();
+    }
+
+    if(waiting_remap){
+        i32 *buttons[] = {
+            &Controls.left,
+            &Controls.right,
+            &Controls.up,
+            &Controls.down,
+        };
+        assert(array_size(buttons) == opetions_count);
+        // TODO solve conflicting keys!
+        i32 *selected_button = buttons[cursor_y];
+    	for(i32 i = KEYCODE_A; i < KEYCODE_COUNT; i++){
+            if(i == KEYCODE_ESC) continue;
+            if(key_pressed(Keyboard.keys[i])){
+                *selected_button = i;
+                waiting_remap = false;
+                break;
+            }
+        }
+    } else {
+        move_cursor(&cursor_y, opetions_count - 1);
+        if(key_pressed(Keyboard.enter) && !waiting_remap){
+            waiting_remap = true;
+        }
+    }
+
+    f32 line_height = (f32)CurrentFont->line_height;
+    f32 y = WHEIGHT * .5f - line_height * opetions_count * 0.5f;
+    f32 w = WWIDTH  * .5f;
+    f32 pen_y = 0;
+
+    // TODO incomplete
+    clear_screen(Vec4(0.1f, 0.1f, 0.1f, 0.0f));
+    draw_settings_option(w, y + line_height * pen_y, cursor_y == pen_y, waiting_remap, Controls.left, "Move Left:"); pen_y++;
+    draw_settings_option(w, y + line_height * pen_y, cursor_y == pen_y, waiting_remap, Controls.right, "Move Right:"); pen_y++;
+    draw_settings_option(w, y + line_height * pen_y, cursor_y == pen_y, waiting_remap, Controls.up, "Move Up:"); pen_y++;
+    draw_settings_option(w, y + line_height * pen_y, cursor_y == pen_y, waiting_remap, Controls.down, "Move Down:"); pen_y++;
+}
+
+void menu(void){
     clear_screen(Vec4(0.1f, 0.1f, 0.1f, 0.0f));
 
     set_font(&BigFont);
@@ -299,4 +334,3 @@ void menu(void){
     }
     set_font(&DefaultFont);
 }
-

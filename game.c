@@ -19,6 +19,8 @@ Font BigFont;
 Font DefaultFont;
 Font DebugFont; // @Debug
 
+GameControls Controls;
+
 i32 StreakOn = false;
 f32 StreakTimer = 0;
 i32 Grid[GridH][GridW] = {0};
@@ -297,8 +299,6 @@ typedef struct{
     i32 *buffer;
 }Stack;
 
-#define Stack(B, C) {.buffer = (B), .size = 0, .capacity = (C)}
-
 void push_stack(Stack *stack, i32 value){
     assert(stack->size < stack->capacity);
     stack->buffer[stack->size++] = value;
@@ -373,6 +373,11 @@ void EngineInit(void){
     };
 
     BackgroundSprite = PieceSprite;
+
+    Controls.left  = KEYCODE_A;
+    Controls.right = KEYCODE_D;
+    Controls.up    = KEYCODE_W;
+    Controls.down  = KEYCODE_S;
 }
 
 static inline Vec4 invert_color(Vec4 color){
@@ -566,11 +571,15 @@ void draw_statistics(i32 x, i32 y){
     i32 b_y = 1;
     i32 b_x = 2;
 
-    draw_centered_text((b_x + 2) * BlockSize, b_y * BlockSize * 0.6f, White_v4, "-Statistics-");
     for(i32 i = 0; i < array_size(Pieces); i++){
         const Piece *p = Pieces[i];
         i32 offset_y = i * 3;
         draw_piece(b_x, b_y + offset_y, p);
+    }
+
+    draw_centered_text((b_x + 2) * BlockSize, b_y * BlockSize * 0.6f, White_v4, "-Statistics-");
+    for(i32 i = 0; i < array_size(Pieces); i++){
+        i32 offset_y = i * 3;
         draw_text((b_x + 5) * BlockSize, (b_y + offset_y + 1) * BlockSize, White_v4, "%d", PieceStatistics[i]);
     }
 }
@@ -578,27 +587,27 @@ void draw_statistics(i32 x, i32 y){
 void move_piece(void){
     if(!is_game_running() | StreakOn) return;
 
-    if(KeyPressed(Keyboard.q)){
+    if(key_pressed(Keyboard.q)){
         Piece new_pos = Aim.piece;
         rotate_piece(&new_pos, -1);
         if(!piece_collided(Aim.x, Aim.y, &new_pos))
             Aim.piece = new_pos;
-    } else if(KeyPressed(Keyboard.e)){
+    } else if(key_pressed(Keyboard.e)){
         Piece new_pos = Aim.piece;
         rotate_piece(&new_pos, 1);
         if(!piece_collided(Aim.x, Aim.y, &new_pos))
             Aim.piece = new_pos;
     }
 
-    if(key_repeat(&Keyboard.a)){
+    if(key_repeat(get_key(Controls.left))){
         if(!piece_collided(Aim.x - 1, Aim.y, &Aim.piece))
             Aim.x -= 1;
-    } else if(key_repeat(&Keyboard.d)){
+    } else if(key_repeat(get_key(Controls.right))){
         if(!piece_collided(Aim.x + 1, Aim.y, &Aim.piece))
             Aim.x += 1;
     }
 
-    if(Keyboard.s.state)
+    if(get_key(Controls.down)->state)
         GravityCount += TimeElapsed * 10;
 
     if(Debug.falling)
@@ -634,13 +643,13 @@ void draw_scene(void){
 }
 
 void prompt(void){
-    if(KeyPressed(Keyboard.w))
+    if(button_pressed(Controls.up))
         confirmation_prompt_cursor++;
-    if(KeyPressed(Keyboard.s))
+    if(button_pressed(Controls.down))
         confirmation_prompt_cursor--;
     warpi(&confirmation_prompt_cursor, 0, 1);
 
-    if(KeyPressed(Keyboard.enter)){
+    if(key_pressed(Keyboard.enter)){
         if(confirmation_prompt_cursor == 1){
             restart_game(true);
             enqueue_message(Green_v4, "Restarted!");
@@ -668,28 +677,28 @@ void prompt(void){
 
 void game_running(void){
     // @DEBUG Save/Load grid
-    if(Keyboard.ctrl.state && KeyPressed(Keyboard.s))
+    if(Keyboard.r_ctrl.state && key_pressed(Keyboard.s))
         save_grid();
-    if(Keyboard.ctrl.state && KeyPressed(Keyboard.l)){
+    if(Keyboard.r_ctrl.state && key_pressed(Keyboard.l)){
         load_grid();
         restart_game(false);
     }
-    if(Keyboard.ctrl.state && Keyboard.n.state){
+    if(Keyboard.r_ctrl.state && Keyboard.n.state){
         spawn_next_piece();
         PieceStatistics[Aim.piece.type - 1]++;
     }
 
     // @Temp Force save scoreboard
-    if(KeyPressed(Keyboard.h)){
+    if(key_pressed(Keyboard.h)){
         save_highscore_to_disk(HighScoreFileName, &HighScore);
     }
 
-    if(KeyPressed(Keyboard.esc)){ // Open settings menu
+    if(key_pressed(Keyboard.esc)){ // Open settings menu
         open_menu(S_Pause);
-    } else if(KeyPressed(Keyboard.o)){ // Reset game
+    } else if(key_pressed(Keyboard.o)){ // Reset game
         confirmation_prompt_open = false;
         GameMode = GM_Prompt;
-    } else if(KeyPressed(Keyboard.enter) && !confirmation_prompt_open){ // Pause game
+    } else if(key_pressed(Keyboard.enter) && !confirmation_prompt_open){ // Pause game
         if(GameOver){
             i32 placement = highscore_placement(Score, &HighScore);
             if(placement <= array_size(HighScore.score)){
@@ -712,15 +721,15 @@ void game_running(void){
     draw_scene();
 
     // Debug Controls
-    if(KeyPressed(Keyboard.x)) Debug.falling = !Debug.falling;
-    if(KeyPressed(Keyboard.m)){
+    if(key_pressed(Keyboard.x)) Debug.falling = !Debug.falling;
+    if(key_pressed(Keyboard.m)){
         Debug.mode++;
         if(Debug.mode >= debug_modes) Debug.mode = 1;
         enqueue_message(Red_v4, "Debug mode set [%s]", DebugModesNames[Debug.mode]);
         Debug.falling = false;
     }
 
-    if(KeyPressed(Keyboard.z)){
+    if(key_pressed(Keyboard.z)){
         PieceIndex = (PieceIndex + 1) % array_size(Pieces);
     }
 
@@ -773,8 +782,13 @@ void game_running(void){
             draw_centered_text(center_x, center_y, White_v4, "Tetris!");
     }
 
-    draw_text(10.0f, WHEIGHT - 32.0f, White_v4, "[%s%s%s%s]:move piece  [%s-%s]:rotate piece  [%s]:restart game", "w", "a", "s", "d", "q", "e", "o"); // TODO show remap keys!
-
+    f32 y = WHEIGHT - (f32)CurrentFont->line_height * 1.4f;
+    draw_text(10.0f, y, White_v4, "[%s-%s-%s]:move piece  [%s-%s]:rotate piece  [%s]:restart game",
+        KeyNames[Controls.left],
+        KeyNames[Controls.down],
+        KeyNames[Controls.right],
+        "q", "e", "o"
+    );
 }
 
 void EngineUpdate(void){

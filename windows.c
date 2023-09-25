@@ -296,22 +296,22 @@ static inline void KeyInput(WPARAM key_code, LPARAM lParam, b32 state){
             Keyboard.shift.state = state;
             break;
         case VK_CONTROL:
-            Keyboard.ctrl.state = state;
+            Keyboard.r_ctrl.state = state;
             break;
         case VK_RETURN:
             Keyboard.enter.state = state;
             break;
         case VK_OEM_PLUS:
-            Keyboard.add.state = state;
+            Keyboard.plus.state = state;
             break;
         case VK_OEM_MINUS:
-            Keyboard.sub.state = state;
+            Keyboard.minus.state = state;
             break;
         case VK_MULTIPLY:
-            Keyboard.mult.state = state;
+            Keyboard.asterisk.state = state;
             break;
         case VK_DIVIDE:
-            Keyboard.div.state = state;
+            Keyboard.r_slash.state = state;
             break;
         case VK_ESCAPE:
             Keyboard.esc.state = state;

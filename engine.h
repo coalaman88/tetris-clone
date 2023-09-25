@@ -13,10 +13,36 @@
 extern u32 FramesPerSec;
 extern f32 TimeElapsed;
 
-typedef struct{
-    u8   *buffer;
-    void *info;
-}BitmapBuffer;
+enum Enum_KeyboardKeyCodes{
+    KEYCODE_A, KEYCODE_B,
+    KEYCODE_C, KEYCODE_D,
+    KEYCODE_E, KEYCODE_F,
+    KEYCODE_G, KEYCODE_H,
+    KEYCODE_I, KEYCODE_J,
+    KEYCODE_K, KEYCODE_L,
+    KEYCODE_M, KEYCODE_N,
+    KEYCODE_O, KEYCODE_P,
+    KEYCODE_Q, KEYCODE_R,
+    KEYCODE_S, KEYCODE_T,
+    KEYCODE_U, KEYCODE_V,
+    KEYCODE_W, KEYCODE_X,
+    KEYCODE_Y, KEYCODE_Z,
+    KEYCODE_0, KEYCODE_1,
+    KEYCODE_2, KEYCODE_3,
+    KEYCODE_4, KEYCODE_5,
+    KEYCODE_6, KEYCODE_7,
+    KEYCODE_8, KEYCODE_9,
+    KEYCODE_LEFT, KEYCODE_RIGHT,
+    KEYCODE_UP, KEYCODE_DOWN,
+    KEYCODE_SPACEBAR, KEYCODE_BACKSPACE,
+    KEYCODE_SHIFT, KEYCODE_ENTER,
+    KEYCODE_CTRL, KEYCODE_PLUS,
+    KEYCODE_MINUS, KEYCODE_ASTERISK,
+    KEYCODE_RSLASH, KEYCODE_ESC,
+    KEYCODE_COUNT,
+};
+
+extern const char *KeyNames[];
 
 typedef struct{
     b32 state;
@@ -32,15 +58,18 @@ struct S_Keyboard{
             Key n0, n1, n2, n3, n4, n5, n6, n7, n8, n9;
             Key left, right, up, down;
             Key space_bar, back_space, shift, enter;
-            Key ctrl, add, sub, mult, div, esc;
+            Key r_ctrl, plus, minus, asterisk, r_slash, esc;
         };
     };
 };
 extern struct S_Keyboard Keyboard;
-#define KeyPressed(key) ((key).state && !(key).old_state)
+
+static inline b32 key_pressed(Key k){
+    return k.state && !k.old_state;
+}
 
 static inline b32 key_pressed_sticky(Key *k){
-    return KeyPressed(*k)? k->state = false, true : false;
+    return key_pressed(*k)? k->state = false, true : false;
 }
 
 struct S_Mouse{
@@ -48,6 +77,21 @@ struct S_Mouse{
     Key right, left;
 };
 extern struct S_Mouse Mouse;
+
+typedef struct{
+    i32 left, right, up, down;
+}GameControls;
+extern GameControls Controls;
+
+static inline Key *get_key(u32 key_code){ // @Move
+    assert(key_code < KEYCODE_COUNT);
+    return &Keyboard.keys[key_code];
+}
+
+static inline b32 button_pressed(u32 key_code){ // @Move
+    assert(key_code < KEYCODE_COUNT);
+    return key_pressed(Keyboard.keys[key_code]);
+}
 
 extern b32 GameRunning;
 

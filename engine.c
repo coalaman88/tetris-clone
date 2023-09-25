@@ -1,19 +1,31 @@
 #include "basic.h"
 #include "engine.h"
-#include <assert.h>
-#include <math.h>
-
-struct S_Keyboard Keyboard = {0};
 
 u32 FramesPerSec;
 f32 TimeElapsed;
 b32 GameRunning;
 
 struct S_Mouse Mouse;
-struct S_Keyboard Keyboard;
+struct S_Keyboard Keyboard = {0};
+
+const char *KeyNames[] = {
+    "a", "b", "c", "d",
+    "e", "f", "g", "h",
+    "i", "j", "k", "l",
+    "m", "n", "o", "p",
+    "q", "r", "s", "t",
+    "u", "v", "w", "x",
+    "y", "z", "0", "1",
+    "2", "3", "4", "5",
+    "6", "7", "8", "9",
+    "left", "right", "up", "down",
+    "spacebar", "backspace", "shift", "enter",
+    "ctrl", "plus", "minus", "asteristk",
+    "r_slash", "esc",
+}; static_assert(array_size(KeyNames) == KEYCODE_COUNT, "Missing key string name.");
 
 void EngineSetup(void){
-    GameRunning = 1;
+    GameRunning = true;
     EngineInit();
 }
 
