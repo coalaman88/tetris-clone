@@ -233,7 +233,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
     ShowWindow(window, nCmdShow);
 
     // Sound
-    init_wasapi();
+    WasapiAudio audio;
+    init_wasapi(&audio);
+    SampleMusic = S_Load(L"C:/Windows/Media/Ring10.wav", audio.bufferFormat->nSamplesPerSec);
+    SampleMusic.loop = true;
 
     // Time things
     TIMECAPS time_caps;
@@ -260,6 +263,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
 
         EngineUpdate();
         EngineDraw();
+        update_sound(&audio);
         EngineProcessInput();
         DrawBuffer(window);
 
