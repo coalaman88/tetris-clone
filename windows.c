@@ -12,6 +12,8 @@
 #include "engine.h"
 #include "game.h"
 
+#include "wasapi.c"
+
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 PFNWGLCREATECONTEXTATTRIBSARBPROC wglCreateContextAttribsARB;
@@ -229,6 +231,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
 
     ReleaseDC(window, hdc);
     ShowWindow(window, nCmdShow);
+
+    // Sound
+    init_wasapi();
 
     // Time things
     TIMECAPS time_caps;
