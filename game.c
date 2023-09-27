@@ -818,6 +818,9 @@ void EngineUpdate(void){
     }
 
     // @Debug
+    static f32 time_count = 0;
+    time_count += TimeElapsed;
+    draw_text(WWIDTH / 2, 0, Yellow_v4, "%.2f", time_count);
     show_rederer_debug_info(0, 0);
     execute_draw_commands();
     FrameDrawCallsCount = 0;

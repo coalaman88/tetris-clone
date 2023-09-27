@@ -143,9 +143,9 @@ static void WA_UnlockBuffer(WasapiAudio* audio, size_t writtenSamples){
 	InterlockedAdd(&audio->rbWriteOffset, (LONG)writeSize);
 }
 
-static void S_Mix(float* outSamples, size_t outSampleCount, float volume, const Sound* sound)
+static void S_Mix(f32* outSamples, size_t outSampleCount, f32 volume, const Sound* sound)
 {
-	const short* inSamples = sound->samples;
+	const i16* inSamples = sound->samples;
 	size_t inPos = sound->pos;
 	size_t inCount = sound->count;
 	bool inLoop = sound->loop;
@@ -169,7 +169,7 @@ static void S_Mix(float* outSamples, size_t outSampleCount, float volume, const 
 			}
 		}
 
-		float sample = inSamples[inPos++] * (1.f / 32768.f);
+		f32 sample = inSamples[inPos++] * (1.f / 32768.f);
 		outSamples[0] += volume * sample;
 		outSamples[1] += volume * sample;
 		outSamples += 2;
@@ -294,7 +294,7 @@ void update_sound(WasapiAudio *audio){
 	S_Update(&SampleMusic, playCount);
 
 	// initialize output with 0.0f
-	float* output = audio->sampleBuffer;
+	f32* output = audio->sampleBuffer;
 	u32 bytesPerSample = audio->bufferFormat->nBlockAlign;
 	memset(output, 0, writeCount * bytesPerSample);
 
@@ -327,12 +327,12 @@ static Sound S_Load(const WCHAR* path, size_t sampleRate){
 			.wFormatTag = WAVE_FORMAT_EXTENSIBLE,
 			.nChannels = (WORD)kChannelCount,
 			.nSamplesPerSec = (WORD)sampleRate,
-			.nAvgBytesPerSec = (DWORD)(sampleRate * kChannelCount * sizeof(short)),
-			.nBlockAlign = (WORD)(kChannelCount * sizeof(short)),
-			.wBitsPerSample = (WORD)(8 * sizeof(short)),
+			.nAvgBytesPerSec = (DWORD)(sampleRate * kChannelCount * sizeof(i16)),
+			.nBlockAlign = (WORD)(kChannelCount * sizeof(i16)),
+			.wBitsPerSample = (WORD)(8 * sizeof(i16)),
 			.cbSize = sizeof(format) - sizeof(format.Format),
 		},
-		.Samples.wValidBitsPerSample = 8 * sizeof(short),
+		.Samples.wValidBitsPerSample = 8 * sizeof(i16),
 		.dwChannelMask = SPEAKER_FRONT_CENTER,
 		.SubFormat = MEDIASUBTYPE_PCM,
 	};
@@ -499,4 +499,96 @@ void init_wasapi(WasapiAudio* audio){
 	VirtualFree(placeholder1, 0, MEM_RELEASE);
 	VirtualFree(placeholder2, 0, MEM_RELEASE);
 	CloseHandle(section);
+}
+
+Sound load_sin_wave(size_t sample_rate, u32 bytes_per_sample, f64 seconds){
+	assert(bytes_per_sample == sizeof(f32));
+    size_t samples_count = (size_t)(sample_rate * seconds);
+    size_t sample_buffer_size = bytes_per_sample * samples_count;
+	
+	Sound sound = {
+		.samples = malloc(sample_buffer_size),
+		.pos     = 0,
+		.count   = samples_count,
+		.loop    = false,
+	};
+
+    f32 theta = 0;
+	f32 step = (f32)PI * 0.01f;
+    f32 volume = .5f;
+    for(i32 i = 0; i < sound.count; i++){
+        i16 sample = (i16)roundf(sinf(theta) * 32767.f * volume);
+        sound.samples[i] = sample;
+        theta += step;
+    }
+	return sound;
+}
+
+#pragma pack(1)
+typedef struct{
+	// riff
+	i32 chunck_id;
+	i32 chunck_size;
+	i32 format;
+
+	// fmt
+	i32 subchunk1_id;
+	i32 subchunk1_size;
+	i16 audio_format;
+	i16 channels_count;
+	i32 sample_rate;
+	i32 bytes_rate;
+	i16 block_align;
+	i16 bits_per_sample;
+
+	// data
+	i32 subchunk2_id;
+	i32 subchunk2_size;
+	// ...
+	// *data*
+}WaveFile;
+
+f32 lerp(f32 v0, f32 v1, f32 t) {
+  return (1 - t) * v0 + t * v1;
+}
+
+Sound naive_load_wave_file(const char *file_name, const WasapiAudio *audio){
+	HANDLE file = CreateFileA(file_name, GENERIC_READ,  FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    i32 size;
+    char *data = read_whole_file(file, &size);
+    CloseHandle(file);
+    WaveFile *wave = (WaveFile*)data;
+    i16 *samples = (i16*)((i8*)wave + sizeof(wave));
+    i32 samples_count = wave->subchunk2_size / wave->channels_count / (wave->bits_per_sample / 8);
+    assert(wave->subchunk2_id == 0x61746164); // "data"
+
+    printf("block_align: %d/%d\n", wave->block_align, audio->bufferFormat->nBlockAlign);
+    printf("sample_rate: %d/%d\n", wave->sample_rate, audio->bufferFormat->nSamplesPerSec);
+    printf("channels: %d\n", wave->channels_count);
+    printf("bits per sample: %d\n", wave->bits_per_sample);
+
+    f32 time = (f32)samples_count / (f32)wave->sample_rate;
+    i32 new_sample_count = (i32)(time * audio->bufferFormat->nSamplesPerSec);
+    i16 *resample = malloc(new_sample_count * sizeof(i16));
+
+    printf("new ratio: %f\n", (f32)new_sample_count / (f32)samples_count);
+
+	// silly resampling
+    for(i32 i = 0; i < new_sample_count; i++){
+        f32 position = (f32)i / new_sample_count * samples_count;
+        i32 index = (i32)(position * wave->channels_count);
+        assert(index * sizeof(i16) < wave->subchunk2_size);
+        resample[i] = samples[index];
+    }
+
+    VirtualFree(data, 0, MEM_RELEASE);
+
+	Sound sound = {
+		.count = new_sample_count,
+		.loop  = false,
+		.pos   = 0,
+		.samples = resample,
+	};
+
+	return sound;
 }

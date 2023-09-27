@@ -235,8 +235,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
     // Sound
     WasapiAudio audio;
     init_wasapi(&audio);
-    SampleMusic = S_Load(L"C:/Windows/Media/Ring10.wav", audio.bufferFormat->nSamplesPerSec);
-    SampleMusic.loop = true;
+
+    SampleMusic = naive_load_wave_file("C:/Windows/Media/Ring10.wav", &audio);
+    //SampleMusic = S_Load(L"C:/Windows/Media/Ring10.wav", audio.bufferFormat->nSamplesPerSec);
+    SampleMusic.pos = 0;
+    //SampleMusic = load_sin_wave(audio.bufferFormat->nSamplesPerSec, audio.bufferFormat->nBlockAlign / 2, 5);
 
     // Time things
     TIMECAPS time_caps;
