@@ -171,7 +171,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
     WNDCLASS win_class = {0};
     win_class.lpfnWndProc   = WindowProc;
     win_class.hInstance     = hInstance;
-    win_class.lpszClassName = "Engine Window Class";
+    win_class.lpszClassName = "TetrisWindowClass";
     win_class.hCursor = LoadCursorA(NULL, IDC_ARROW);
 
     RegisterClass(&win_class);
@@ -185,7 +185,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
     HWND window = CreateWindowEx(
         0,
         win_class.lpszClassName, // Window class
-        "Engine",  // Window text
+        "Tetris",  // Window text
         styles,    // Window style
         CW_USEDEFAULT, CW_USEDEFAULT, rect.right - rect.left, rect.bottom - rect.top, // Size and position
         NULL,      // Parent window
@@ -254,7 +254,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
         QueryPerformanceCounter(&timer_start);
         FramesPerSec = (u32)(1000 / (1000 * (timer_start.QuadPart - old_start.QuadPart) / freq.QuadPart));
 
-        while (PeekMessageA(&msg, 0, 0, 0, PM_REMOVE)){
+        while(PeekMessageA(&msg, 0, 0, 0, PM_REMOVE)){
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
@@ -263,6 +263,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
 
         EngineUpdate();
         EngineDraw();
+        // TODO move this to other thread?
         update_sound(&audio);
         EngineProcessInput();
         DrawBuffer(window);
@@ -351,50 +352,50 @@ static inline void KeyInput(WPARAM key_code, LPARAM lParam, b32 state){
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     switch (uMsg){
-    case WM_DESTROY:
-        GameRunning = 0;
-        PostQuitMessage(0);
-        return 0;
+        case WM_DESTROY:
+            GameRunning = 0;
+            PostQuitMessage(0);
+            return 0;
 
-    case WM_SETFOCUS:
-        window_has_focus = true;
-        return 0;
+        case WM_SETFOCUS:
+            window_has_focus = true;
+            return 0;
 
-    case WM_KILLFOCUS:
-        window_has_focus = false;
-        return 0;
+        case WM_KILLFOCUS:
+            window_has_focus = false;
+            return 0;
 
-    case WM_KEYDOWN:
-        KeyInput(wParam, lParam, true);
-        return 0;
+        case WM_KEYDOWN:
+            KeyInput(wParam, lParam, true);
+            return 0;
 
-    case WM_KEYUP:
-        KeyInput(wParam, lParam, false);
-        return 0;
+        case WM_KEYUP:
+            KeyInput(wParam, lParam, false);
+            return 0;
 
-    case WM_LBUTTONDOWN:
-        Mouse.left.state = true;
-        return 0;
+        case WM_LBUTTONDOWN:
+            Mouse.left.state = true;
+            return 0;
 
-    case WM_LBUTTONUP:
-        Mouse.left.state = false;
-        return 0;
+        case WM_LBUTTONUP:
+            Mouse.left.state = false;
+            return 0;
 
-    case WM_RBUTTONDOWN:
-        Mouse.right.state = true;
-        return 0;
+        case WM_RBUTTONDOWN:
+            Mouse.right.state = true;
+            return 0;
 
-    case WM_RBUTTONUP:
-        Mouse.right.state = false;
-        return 0;
+        case WM_RBUTTONUP:
+            Mouse.right.state = false;
+            return 0;
 
-    case WM_MOUSEMOVE: {
-        POINT mouse_pos;
-        GetCursorPos(&mouse_pos);
-        ScreenToClient(hwnd, &mouse_pos);
-        Mouse.x = mouse_pos.x;
-        Mouse.y = mouse_pos.y;
-        return 0;
+        case WM_MOUSEMOVE: {
+            POINT mouse_pos;
+            GetCursorPos(&mouse_pos);
+            ScreenToClient(hwnd, &mouse_pos);
+            Mouse.x = mouse_pos.x;
+            Mouse.y = mouse_pos.y;
+            return 0;
         }
     }
     return DefWindowProc(hwnd, uMsg, wParam, lParam);

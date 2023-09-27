@@ -1,15 +1,16 @@
 #define WIN32_LEAN_AND_MEAN
 #define COBJMACROS
-#pragma warning(push, 0)
+
 #include <windows.h>
 #include <initguid.h>
 #include <audioclient.h>
 #include <mmdeviceapi.h>
+#include <uuids.h>
+#include <avrt.h>
+#pragma warning(push, 0)
 #include <mfapi.h>
 #include <mfidl.h>
 #include <mfreadwrite.h>
-#include <uuids.h>
-#include <avrt.h>
 #pragma warning(pop)
 
 #include "basic.h"
@@ -477,6 +478,8 @@ void init_wasapi(WasapiAudio* audio){
 
 	audio->client = client;
 	audio->bufferFormat = format;
+	audio->outSize = out_size;
+	audio->event = event;
 	audio->sampleBuffer = NULL;
 	audio->sampleCount = 0;
 	audio->playCount = 0;
