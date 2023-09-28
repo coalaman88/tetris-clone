@@ -549,7 +549,7 @@ typedef struct{
 }WaveFile;
 
 f32 lerp(f32 v0, f32 v1, f32 t) {
-  return (1 - t) * v0 + t * v1;
+  return (1.0f - t) * v0 + t * v1;
 }
 
 Sound naive_load_wave_file(const char *file_name, const WasapiAudio *audio){
@@ -576,9 +576,22 @@ Sound naive_load_wave_file(const char *file_name, const WasapiAudio *audio){
 	// silly resampling
     for(i32 i = 0; i < new_sample_count; i++){
         f32 position = (f32)i / new_sample_count * samples_count;
+		#if 1
+		f32 new_sample;
+		i32 p0 = (i32)floorf(position);
+		i32 p1 = (i32)ceilf(position);
+		i32 d = p1 - p0;
+		if(d > 0){
+			new_sample = lerp((f32)samples[p0 * 2], (f32)samples[p1 * 2], position - (f32)p0);
+		} else {
+			new_sample = (f32)samples[p0 * 2];
+		}
+		resample[i] = (i16)new_sample;
+		#else
         i32 index = (i32)(position * wave->channels_count);
         assert(index * sizeof(i16) < wave->subchunk2_size);
         resample[i] = samples[index];
+		#endif
     }
 
     VirtualFree(data, 0, MEM_RELEASE);
