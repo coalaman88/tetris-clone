@@ -7,19 +7,12 @@
 #include <mmdeviceapi.h>
 #include <uuids.h>
 #include <avrt.h>
-#pragma warning(push, 0)
-#include <mfapi.h>
-#include <mfidl.h>
-#include <mfreadwrite.h>
-#pragma warning(pop)
 
 #include "basic.h"
 
 #pragma comment (lib, "avrt")
 #pragma comment (lib, "ole32")
 #pragma comment (lib, "onecore")
-#pragma comment (lib, "mfplat")
-#pragma comment (lib, "mfreadwrite")
 
 DEFINE_GUID(CLSID_MMDeviceEnumerator, 0xbcde0395, 0xe52f, 0x467c, 0x8e, 0x3d, 0xc4, 0x57, 0x92, 0x91, 0x69, 0x2e);
 DEFINE_GUID(IID_IMMDeviceEnumerator,  0xa95664d2, 0x9614, 0x4f35, 0xa7, 0x46, 0xde, 0x8d, 0xb6, 0x36, 0x17, 0xe6);
@@ -304,95 +297,6 @@ void update_sound(WasapiAudio *audio){
 	WA_UnlockBuffer(audio, writeCount);
 }
 
-// loads any supported sound file, and resamples to mono 16-bit audio with specified sample rate
-static Sound S_Load(const WCHAR* path, size_t sampleRate){
-	HRESULT result;
-	Sound sound = { NULL, 0, 0, false };
-	result = MFStartup(MF_VERSION, MFSTARTUP_LITE);
-	assert(result == S_OK);
-
-	IMFSourceReader* reader;
-	result = MFCreateSourceReaderFromURL(path, NULL, &reader);
-	assert(result == S_OK);
-
-	// read only first audio stream
-	result = IMFSourceReader_SetStreamSelection(reader, (DWORD)MF_SOURCE_READER_ALL_STREAMS, FALSE);
-	assert(result == S_OK);
-	result = IMFSourceReader_SetStreamSelection(reader, (DWORD)MF_SOURCE_READER_FIRST_AUDIO_STREAM, TRUE);
-	assert(result == S_OK);
-
-	const size_t kChannelCount = 1;
-	const WAVEFORMATEXTENSIBLE format = {
-		.Format = {
-			.wFormatTag = WAVE_FORMAT_EXTENSIBLE,
-			.nChannels = (WORD)kChannelCount,
-			.nSamplesPerSec = (WORD)sampleRate,
-			.nAvgBytesPerSec = (DWORD)(sampleRate * kChannelCount * sizeof(i16)),
-			.nBlockAlign = (WORD)(kChannelCount * sizeof(i16)),
-			.wBitsPerSample = (WORD)(8 * sizeof(i16)),
-			.cbSize = sizeof(format) - sizeof(format.Format),
-		},
-		.Samples.wValidBitsPerSample = 8 * sizeof(i16),
-		.dwChannelMask = SPEAKER_FRONT_CENTER,
-		.SubFormat = MEDIASUBTYPE_PCM,
-	};
-
-	// Media Foundation in Windows 8+ allows reader to convert output to different format than native
-	IMFMediaType* type;
-	result = MFCreateMediaType(&type);
-	assert(result == S_OK);
-	result = MFInitMediaTypeFromWaveFormatEx(type, &format.Format, sizeof(format));
-	assert(result == S_OK);
-	result = IMFSourceReader_SetCurrentMediaType(reader, (DWORD)MF_SOURCE_READER_FIRST_AUDIO_STREAM, NULL, type);
-	assert(result == S_OK);
-	IMFMediaType_Release(type);
-
-	size_t used = 0;
-	size_t capacity = 0;
-
-	while(true){
-		IMFSample* sample;
-		DWORD flags = 0;
-		result = IMFSourceReader_ReadSample(reader, (DWORD)MF_SOURCE_READER_FIRST_AUDIO_STREAM, 0, NULL, &flags, NULL, &sample);
-		if(FAILED(result))
-			break;
-
-		if(flags & MF_SOURCE_READERF_ENDOFSTREAM)
-			break;
-		assert(flags == 0);
-
-		IMFMediaBuffer* buffer;
-		result = IMFSample_ConvertToContiguousBuffer(sample, &buffer);
-		assert(result == S_OK);
-
-		BYTE* data;
-		DWORD size;
-		result = IMFMediaBuffer_Lock(buffer, &data, NULL, &size);
-		assert(result == S_OK);
-		{
-			size_t avail = capacity - used;
-			if (avail < size)
-			{
-				sound.samples = realloc(sound.samples, capacity += 64 * 1024);
-			}
-			memcpy((char*)sound.samples + used, data, size);
-			used += size;
-		}
-		result = IMFMediaBuffer_Unlock(buffer);
-		assert(result == S_OK);
-
-		IMediaBuffer_Release(buffer);
-		IMFSample_Release(sample);
-	}
-
-	IMFSourceReader_Release(reader);
-
-	MFShutdown();
-
-	sound.pos = sound.count = used / format.Format.nBlockAlign;
-	return sound;
-}
-
 void init_wasapi(WasapiAudio* audio){
 	HRESULT result = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
     assert(result == S_OK);
@@ -548,59 +452,66 @@ typedef struct{
 	// *data*
 }WaveFile;
 
-f32 lerp(f32 v0, f32 v1, f32 t) {
+f32 sincf(f32 t){
+	if(t == 0) return 1.0f;
+	f32 x = (f32)PI * t;
+	return sinf(x) / x;
+}
+
+f32 lerp(f32 v0, f32 v1, f32 t) { // @Move
   return (1.0f - t) * v0 + t * v1;
 }
 
-Sound naive_load_wave_file(const char *file_name, const WasapiAudio *audio){
+Sound load_wave_file(const char *file_name, const WasapiAudio *audio){
 	HANDLE file = CreateFileA(file_name, GENERIC_READ,  FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
     i32 size;
     char *data = read_whole_file(file, &size);
     CloseHandle(file);
     WaveFile *wave = (WaveFile*)data;
-    i16 *samples = (i16*)((i8*)wave + sizeof(wave));
-    i32 samples_count = wave->subchunk2_size / wave->channels_count / (wave->bits_per_sample / 8);
+	assert(wave->chunck_id    == 0x46464952); // "RIFF"
+	assert(wave->subchunk1_id == 0x20746D66); // "tfm "
     assert(wave->subchunk2_id == 0x61746164); // "data"
+	assert(wave->bits_per_sample == 16);
+    i16 *original_samples = (i16*)((i8*)wave + sizeof(WaveFile));
 
-    printf("block_align: %d/%d\n", wave->block_align, audio->bufferFormat->nBlockAlign);
-    printf("sample_rate: %d/%d\n", wave->sample_rate, audio->bufferFormat->nSamplesPerSec);
-    printf("channels: %d\n", wave->channels_count);
-    printf("bits per sample: %d\n", wave->bits_per_sample);
+    // printf("block_align: %d/%d\n", wave->block_align, audio->bufferFormat->nBlockAlign);
+    // printf("sample_rate: %d/%d\n", wave->sample_rate, audio->bufferFormat->nSamplesPerSec);
+    // printf("channels: %d\n", wave->channels_count);
+    // printf("bits per sample: %d\n", wave->bits_per_sample);
 
-    f32 time = (f32)samples_count / (f32)wave->sample_rate;
-    i32 new_sample_count = (i32)(time * audio->bufferFormat->nSamplesPerSec);
-    i16 *resample = malloc(new_sample_count * sizeof(i16));
+	i32 sample_count;
+	i16 *samples;
+    i32 original_samples_count = wave->subchunk2_size / wave->channels_count / (wave->bits_per_sample / 8);
+	if(wave->sample_rate != (i32)audio->bufferFormat->nSamplesPerSec){
+		assert(wave->sample_rate < (i32)audio->bufferFormat->nSamplesPerSec);
+		f32 time = (f32)original_samples_count / (f32)wave->sample_rate;
+		sample_count = (i32)(time * audio->bufferFormat->nSamplesPerSec);
+		samples = malloc(sample_count * sizeof(i16)); // TODO remove std malloc
+		//printf("ratio: %f\n", (f32)sample_count / (f32)original_samples_count);
 
-    printf("new ratio: %f\n", (f32)new_sample_count / (f32)samples_count);
-
-	// silly resampling
-    for(i32 i = 0; i < new_sample_count; i++){
-        f32 position = (f32)i / new_sample_count * samples_count;
-		#if 1
-		f32 new_sample;
-		i32 p0 = (i32)floorf(position);
-		i32 p1 = (i32)ceilf(position);
-		i32 d = p1 - p0;
-		if(d > 0){
-			new_sample = lerp((f32)samples[p0 * 2], (f32)samples[p1 * 2], position - (f32)p0);
-		} else {
-			new_sample = (f32)samples[p0 * 2];
+		// silly resampling
+		for(i32 i = 0; i < sample_count; i++){
+			f32 position = (f32)i / sample_count * (original_samples_count - 1);
+			i32 p0  = (i32)floorf(position);
+			i32 p1  = (i32)ceilf(position);
+			f32 t   = position - (f32)p0;
+			f32 ch0 = lerp((f32)original_samples[p0 * 2 + 0], (f32)original_samples[p1 * 2 + 0], t);
+			f32 ch1 = lerp((f32)original_samples[p0 * 2 + 1], (f32)original_samples[p1 * 2 + 1], t);
+			samples[i] = (i16)((ch0 + ch1) * .5f);
 		}
-		resample[i] = (i16)new_sample;
-		#else
-        i32 index = (i32)(position * wave->channels_count);
-        assert(index * sizeof(i16) < wave->subchunk2_size);
-        resample[i] = samples[index];
-		#endif
-    }
+	} else {
+		sample_count = original_samples_count;
+		samples = malloc(wave->subchunk2_size); // TODO remove std malloc
+		memcpy(samples, original_samples, wave->subchunk2_size);
+	}
 
     VirtualFree(data, 0, MEM_RELEASE);
 
 	Sound sound = {
-		.count = new_sample_count,
+		.count = sample_count,
 		.loop  = false,
 		.pos   = 0,
-		.samples = resample,
+		.samples = samples,
 	};
 
 	return sound;
