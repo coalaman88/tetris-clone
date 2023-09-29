@@ -80,3 +80,6 @@ void init_highscore_menu_in_insert_mode(i32 board_position);
 void restart_game(b32 clear_grid);
 
 void enqueue_message(Vec4 color, const char *format, ...);
+
+extern Sound BackgroundSound;
+extern Sound CursorSound;

@@ -48,14 +48,17 @@ typedef struct {
 	volatile LONG rbWriteOffset; // offset up to what buffer is filled
 } WasapiAudio;
 
-typedef struct {
-	i16* samples;
-	size_t count;
-	size_t pos;
-	bool loop;
-} Sound;
+typedef struct{
+	WasapiAudio *internals;
+	
+	SoundState audio_stack[10];
+	i32 audio_count;
+} T_AudioPlayer;
 
-Sound SampleMusic; // @Removeme
+T_AudioPlayer AudioState = {0};
+
+Sound BackgroundSound; // @Removeme
+Sound CursorSound; // @Removeme
 
 DWORD roundup_two_power(DWORD value){
     DWORD mask = 0x80000000;
@@ -136,35 +139,29 @@ static void WA_UnlockBuffer(WasapiAudio* audio, size_t writtenSamples){
 	InterlockedAdd(&audio->rbWriteOffset, (LONG)writeSize);
 }
 
-static void S_Mix(f32* outSamples, size_t outSampleCount, f32 volume, const Sound* sound)
-{
+static void S_Mix(f32* outSamples, size_t outSampleCount, const SoundState* sound){
 	const i16* inSamples = sound->samples;
 	size_t inPos = sound->pos;
 	size_t inCount = sound->count;
-	bool inLoop = sound->loop;
+	b32 inLoop = sound->loop;
 
-	for (size_t i = 0; i < outSampleCount; i++)
-	{
-		if (inLoop)
-		{
-			if (inPos == inCount)
-			{
+	for (size_t i = 0; i < outSampleCount; i++){
+		if (inLoop){
+			if (inPos == inCount){
 				// reset looping sound back to start
 				inPos = 0;
 			}
 		}
-		else
-		{
-			if (inPos >= inCount)
-			{
+		else {
+			if (inPos >= inCount){
 				// non-looping sounds stops playback when done
 				break;
 			}
 		}
 
 		f32 sample = inSamples[inPos++] * (1.f / 32768.f);
-		outSamples[0] += volume * sample;
-		outSamples[1] += volume * sample;
+		outSamples[0] += sound->volume * sample;
+		outSamples[1] += sound->volume * sample;
 		outSamples += 2;
 	}
 }
@@ -260,7 +257,7 @@ static DWORD CALLBACK wasapi_audio_thread(LPVOID arg){
 	return 0;
 }
 
-static void S_Update(Sound* sound, size_t samples){
+static void S_Update(SoundState* sound, size_t samples){
 	sound->pos += samples;
 	if(sound->loop){
 		sound->pos %= sound->count;
@@ -269,9 +266,9 @@ static void S_Update(Sound* sound, size_t samples){
 	}
 }
 
-void update_sound(WasapiAudio *audio){
+void update_sounds(T_AudioPlayer *state){
+	WasapiAudio *audio = state->internals;
 	WA_LockBuffer(audio);
-
 	// write at least 100msec of samples into buffer (or whatever space available, whichever is smaller)
 	// this is max amount of time you expect code will take until the next iteration of loop
 	// if code will take more time then you'll hear discontinuity as buffer will be filled with silence
@@ -282,18 +279,21 @@ void update_sound(WasapiAudio *audio){
 	// then you can try to increase delay below to 900+ msec, it still should sound fine
 	//writeCount = audio.sampleCount;
 
-	// advance sound playback positions
-	size_t playCount = audio->playCount;
-	S_Update(&SampleMusic, playCount);
-
 	// initialize output with 0.0f
 	f32* output = audio->sampleBuffer;
 	u32 bytesPerSample = audio->bufferFormat->nBlockAlign;
 	memset(output, 0, writeCount * bytesPerSample);
 
-	// mix sounds into output
-	S_Mix(output, writeCount, 1.0f, &SampleMusic);
+	// advance sound playback positions
+	size_t playCount = audio->playCount;
+	for(i32 i = 0; i < array_size(state->audio_stack); i++){
+		SoundState *sound = &state->audio_stack[i];
+		if(sound->pos >= sound->count) continue;
+		S_Update(sound, playCount);
+		S_Mix(output, writeCount, sound);
+	}
 
+	// mix sounds into output
 	WA_UnlockBuffer(audio, writeCount);
 }
 
@@ -403,22 +403,22 @@ void init_wasapi(WasapiAudio* audio){
 	VirtualFree(placeholder1, 0, MEM_RELEASE);
 	VirtualFree(placeholder2, 0, MEM_RELEASE);
 	CloseHandle(section);
+
+	AudioState.internals = audio;
 }
 
 Sound load_sin_wave(size_t sample_rate, u32 bytes_per_sample, f64 seconds){
 	assert(bytes_per_sample == sizeof(f32));
     size_t samples_count = (size_t)(sample_rate * seconds);
-    size_t sample_buffer_size = bytes_per_sample * samples_count;
+    size_t sample_buffer_size = bytes_per_sample / 2 * samples_count;
 	
 	Sound sound = {
 		.samples = malloc(sample_buffer_size),
-		.pos     = 0,
 		.count   = samples_count,
-		.loop    = false,
 	};
 
     f32 theta = 0;
-	f32 step = (f32)PI * 0.01f;
+	f32 step = (f32)PI * 0.025f;
     f32 volume = .5f;
     for(i32 i = 0; i < sound.count; i++){
         i16 sample = (i16)roundf(sinf(theta) * 32767.f * volume);
@@ -431,13 +431,13 @@ Sound load_sin_wave(size_t sample_rate, u32 bytes_per_sample, f64 seconds){
 #pragma pack(1)
 typedef struct{
 	// riff
-	i32 chunck_id;
+	i32 riff_chunck_id;
 	i32 chunck_size;
 	i32 format;
 
 	// fmt
-	i32 subchunk1_id;
-	i32 subchunk1_size;
+	i32 format_chunck_id;
+	i32 format_chunck_size;
 	i16 audio_format;
 	i16 channels_count;
 	i32 sample_rate;
@@ -445,43 +445,56 @@ typedef struct{
 	i16 block_align;
 	i16 bits_per_sample;
 
-	// data
-	i32 subchunk2_id;
-	i32 subchunk2_size;
+	// other_chunck_id
+	// other_chunck_size;
 	// ...
-	// *data*
+	// data chunck
+	// i32 subchunk2_id;
+	// i32 subchunk2_size;
+	// i16 data[];
 }WaveFile;
-
-f32 sincf(f32 t){
-	if(t == 0) return 1.0f;
-	f32 x = (f32)PI * t;
-	return sinf(x) / x;
-}
 
 f32 lerp(f32 v0, f32 v1, f32 t) { // @Move
   return (1.0f - t) * v0 + t * v1;
 }
 
-Sound load_wave_file(const char *file_name, const WasapiAudio *audio){
+Sound load_wave_file(const char *file_name){ // FIXME
+	const WasapiAudio *audio = AudioState.internals;
 	HANDLE file = CreateFileA(file_name, GENERIC_READ,  FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
     i32 size;
-    char *data = read_whole_file(file, &size);
+    u8 *data = (u8*)read_whole_file(file, &size);
     CloseHandle(file);
     WaveFile *wave = (WaveFile*)data;
-	assert(wave->chunck_id    == 0x46464952); // "RIFF"
-	assert(wave->subchunk1_id == 0x20746D66); // "tfm "
-    assert(wave->subchunk2_id == 0x61746164); // "data"
-	assert(wave->bits_per_sample == 16);
-    i16 *original_samples = (i16*)((i8*)wave + sizeof(WaveFile));
+	assert(size > sizeof(WaveFile));
+	assert(wave->riff_chunck_id   == 0x46464952); // "RIFF"
+	assert(wave->format_chunck_id == 0x20746D66); // "tfm "
+	assert(wave->bits_per_sample  == 16);
 
-    // printf("block_align: %d/%d\n", wave->block_align, audio->bufferFormat->nBlockAlign);
-    // printf("sample_rate: %d/%d\n", wave->sample_rate, audio->bufferFormat->nSamplesPerSec);
-    // printf("channels: %d\n", wave->channels_count);
-    // printf("bits per sample: %d\n", wave->bits_per_sample);
+	u8 *chunck_p = (u8*)wave + sizeof(WaveFile);
+	i32 original_samples_size = 0;
+	i16 *original_samples = NULL;
+	while(chunck_p < data + size){
+		i32 chunck_id   = *(i32*)(chunck_p + 0);
+		i32 chunck_size = *(i32*)(chunck_p + 4);
+		i16 *data_p     =  (i16*)(chunck_p + 8);
+		chunck_p  += 8 + chunck_size;
+		//printf("id: 0x%x\n", chunck_id);
+
+		if(chunck_id == 0x61746164){ // "data"
+			original_samples_size = chunck_size;
+			original_samples = data_p;
+		}
+	}
+	assert(chunck_p == data + size);
+	assert(original_samples);
+
+    //printf("sample_rate: %d/%d\n", wave->sample_rate, audio->bufferFormat->nSamplesPerSec);
+    //printf("bytes per sample: %d/%d\n", wave->bits_per_sample / 8, audio->bufferFormat->wBitsPerSample / 8);
+    //printf("channels: %d\n", wave->channels_count);
 
 	i32 sample_count;
 	i16 *samples;
-    i32 original_samples_count = wave->subchunk2_size / wave->channels_count / (wave->bits_per_sample / 8);
+    i32 original_samples_count = original_samples_size / wave->channels_count / (wave->bits_per_sample / 8);
 	if(wave->sample_rate != (i32)audio->bufferFormat->nSamplesPerSec){
 		assert(wave->sample_rate < (i32)audio->bufferFormat->nSamplesPerSec);
 		f32 time = (f32)original_samples_count / (f32)wave->sample_rate;
@@ -501,18 +514,39 @@ Sound load_wave_file(const char *file_name, const WasapiAudio *audio){
 		}
 	} else {
 		sample_count = original_samples_count;
-		samples = malloc(wave->subchunk2_size); // TODO remove std malloc
-		memcpy(samples, original_samples, wave->subchunk2_size);
+		samples = malloc(original_samples_size); // TODO remove std malloc
+		memcpy(samples, original_samples, original_samples_size);
 	}
 
     VirtualFree(data, 0, MEM_RELEASE);
 
 	Sound sound = {
-		.count = sample_count,
-		.loop  = false,
-		.pos   = 0,
 		.samples = samples,
+		.count   = sample_count,
 	};
 
 	return sound;
+}
+
+void play_sound(Sound sound, f32 volume, b32 in_loop){
+	T_AudioPlayer *state = &AudioState;
+	SoundState *free = NULL;
+	for(i32 i = 0; i < array_size(state->audio_stack); i++){
+		SoundState *s = &state->audio_stack[i];
+		if(s->pos >= s->count){
+			free = s;
+			break;
+		}
+	}
+
+	if(!free){
+		printf("WARNING! no audio slot!\n"); // @debug
+		return;
+	}
+
+	free->samples = sound.samples;
+	free->count   = sound.count;
+	free->loop    = in_loop;
+	free->volume  = volume;
+	free->pos     = 0;
 }

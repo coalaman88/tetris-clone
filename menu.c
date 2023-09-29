@@ -78,7 +78,9 @@ static void move_cursor(i32 *cursor, i32 max){
         *cursor += 1;
     else if(button_pressed(Controls.up))
         *cursor -= 1;
+    else return;
     warpi(cursor, 0, max);
+    play_sound(CursorSound, UI_VOLUME, false);
 }
 
 void open_menu(i32 destination){ // TODO save the cursor position in the stack?

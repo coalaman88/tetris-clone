@@ -10,6 +10,8 @@
 #define WHEIGHT (FHEIGHT * WSCALE)
 #define TARGETFPS (1000 / 60)
 
+#define UI_VOLUME 0.5f
+
 extern u32 FramesPerSec;
 extern f32 TimeElapsed;
 
@@ -97,10 +99,25 @@ extern b32 GameRunning;
 
 void EngineInit(void);
 void EngineUpdate(void);
-void EngineDraw(void);
 void EngineClearInput(void);
 void EngineProcessInput(void);
 void EngineSetup(void);
+
+typedef struct {
+	i16* samples;
+	size_t count;
+} Sound;
+
+typedef struct{
+    i16* samples;
+	size_t count;
+    size_t pos;
+	b32 loop;
+    f32 volume;
+} SoundState;
+
+Sound load_wave_file(const char *file_name);
+void play_sound(Sound sound, f32 volume, b32 in_loop);
 
 typedef struct{
     i32 day;

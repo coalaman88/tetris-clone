@@ -47,7 +47,8 @@ const Piece Line = {
         0, 0, 0, 0,
         1, 1, 1, 1,
         0, 0, 0, 0,
-        0, 0, 0, 0}
+        0, 0, 0, 0,
+    },
 };
 
 const Piece Block = {
@@ -55,7 +56,8 @@ const Piece Block = {
     .type = 2,
     .bitmap = {
         1, 1,
-        1, 1}
+        1, 1,
+    },
 };
 
 const Piece Piramid = {
@@ -64,7 +66,8 @@ const Piece Piramid = {
     .bitmap = {
         0, 1, 0,
         1, 1, 1,
-        0, 0, 0}
+        0, 0, 0,
+    },
 };
 
 const Piece LeftL = {
@@ -73,7 +76,8 @@ const Piece LeftL = {
     .bitmap = {
         1, 0, 0,
         1, 1, 1,
-        0, 0, 0,}
+        0, 0, 0,
+    },
 };
 
 const Piece RightL = {
@@ -82,7 +86,8 @@ const Piece RightL = {
     .bitmap = {
         0, 0, 1,
         1, 1, 1,
-        0, 0, 0,}
+        0, 0, 0,
+    },
 };
 
 const Piece LeftZ = {
@@ -91,7 +96,8 @@ const Piece LeftZ = {
     .bitmap = {
         1, 1, 0,
         0, 1, 1,
-        0, 0, 0}
+        0, 0, 0,
+    },
 };
 
 const Piece RightZ = {
@@ -100,7 +106,8 @@ const Piece RightZ = {
     .bitmap = {
         0, 1, 1,
         1, 1, 0,
-        0, 0, 0}
+        0, 0, 0,
+    },
 };
 
 const f32 BlockSize = 25.0f;
@@ -299,16 +306,6 @@ typedef struct{
     i32 *buffer;
 }Stack;
 
-void push_stack(Stack *stack, i32 value){
-    assert(stack->size < stack->capacity);
-    stack->buffer[stack->size++] = value;
-}
-
-i32 pop_stack(Stack *stack){
-    assert(--stack->size >= 0);
-    return stack->buffer[stack->size];
-}
-
 b32 highscore_placement(i32 score, const Scoreboard *board){
     for(i32 i = 0; i < board->count; i++){
         if(score > board->score[i].score)
@@ -316,17 +313,6 @@ b32 highscore_placement(i32 score, const Scoreboard *board){
     }
     return board->count + 1;
 }
-
-// TODO list
-// # Macro stuff
-// seting
-// sound
-// key remap
-//
-// # Micro stuff
-
-// BUGS
-// input diagonal moviment
 
 Font load_system_font(const char *name, i32 font_size){
     char font_path[256] = {0};
@@ -361,7 +347,7 @@ void EngineInit(void){
         .y = 0,
         .w = (i32)BlockSize,
         .h = (i32)BlockSize,
-        .atlas = tile_atlas
+        .atlas = tile_atlas,
     };
 
     PieceSprite = (Sprite){
@@ -369,7 +355,7 @@ void EngineInit(void){
         .y = 0,
         .w = (i32)BlockSize,
         .h = (i32)BlockSize,
-        .atlas = tile_atlas
+        .atlas = tile_atlas,
     };
 
     BackgroundSprite = PieceSprite;
@@ -378,6 +364,11 @@ void EngineInit(void){
     Controls.right = KEYCODE_D;
     Controls.up    = KEYCODE_W;
     Controls.down  = KEYCODE_S;
+
+    BackgroundSound = load_wave_file("C:\\Windows\\Media\\Ring10.wav");
+    CursorSound     = load_wave_file("data\\audio\\sound1.wav");
+
+    play_sound(BackgroundSound, 1.0f, true);
 }
 
 static inline Vec4 invert_color(Vec4 color){
@@ -825,8 +816,4 @@ void EngineUpdate(void){
     execute_draw_commands();
     FrameDrawCallsCount = 0;
     FrameVertexCount    = 0;
-}
-
-void EngineDraw(void){
-
 }
