@@ -38,6 +38,14 @@ Sprite BorderSprite;
 Sprite BackgroundSprite;
 Sprite PieceSprite;
 
+Sound BackgroundSound;
+Sound CursorSound;
+Sound MovePieceSound;
+Sound LockPieceSound;
+Sound RotatePiece;
+Sound GameOverSound;
+Sound ScoreSound;
+Sound TetrisSound;
 // Using Super Rotation System
 
 const Piece Line = {
@@ -368,7 +376,16 @@ void EngineInit(void){
     BackgroundSound = load_wave_file("C:\\Windows\\Media\\Ring10.wav");
     CursorSound     = load_wave_file("data\\audio\\sound1.wav");
 
-    play_sound(BackgroundSound, 1.0f, true);
+    //BackgroundSound = load_wave_file("C:\\Windows\\Media\\Ring10.wav");
+    CursorSound     = load_wave_file("data\\audio\\ui_move.wav");
+    MovePieceSound  = load_wave_file("data\\audio\\move_piece.wav");
+    LockPieceSound  = load_wave_file("data\\audio\\lock_piece.wav");
+    RotatePiece     = load_wave_file("data\\audio\\rotate_piece.wav");
+    GameOverSound   = load_wave_file("data\\audio\\gameover.wav");
+    ScoreSound      = load_wave_file("data\\audio\\score.wav");
+    TetrisSound     = load_wave_file("data\\audio\\tetris.wav");
+    
+    //play_sound(BackgroundSound, 0.2f, true);
 }
 
 static inline Vec4 invert_color(Vec4 color){
@@ -491,7 +508,10 @@ void update_grid(void){
             if(streak >= 4){
                 StreakTimer = 1.0f;
                 StreakOn = true;
+                play_sound(TetrisSound, 1.0f, false);
                 return;
+            } else {
+                play_sound(ScoreSound, 1.0f, false);
             }
         }
     }
@@ -581,21 +601,29 @@ void move_piece(void){
     if(key_pressed(Keyboard.q)){
         Piece new_pos = Aim.piece;
         rotate_piece(&new_pos, -1);
-        if(!piece_collided(Aim.x, Aim.y, &new_pos))
+        if(!piece_collided(Aim.x, Aim.y, &new_pos)){
             Aim.piece = new_pos;
+            play_sound(RotatePiece, 1.0f, false);
+        }
     } else if(key_pressed(Keyboard.e)){
         Piece new_pos = Aim.piece;
         rotate_piece(&new_pos, 1);
-        if(!piece_collided(Aim.x, Aim.y, &new_pos))
+        if(!piece_collided(Aim.x, Aim.y, &new_pos)){
             Aim.piece = new_pos;
+            play_sound(RotatePiece, 1.0f, false);
+        }
     }
 
     if(key_repeat(get_key(Controls.left))){
-        if(!piece_collided(Aim.x - 1, Aim.y, &Aim.piece))
+        if(!piece_collided(Aim.x - 1, Aim.y, &Aim.piece)){
             Aim.x -= 1;
+            play_sound(MovePieceSound, 0.5f, false);
+        }
     } else if(key_repeat(get_key(Controls.right))){
-        if(!piece_collided(Aim.x + 1, Aim.y, &Aim.piece))
+        if(!piece_collided(Aim.x + 1, Aim.y, &Aim.piece)){
             Aim.x += 1;
+            play_sound(MovePieceSound, 0.5f, false);
+        }
     }
 
     if(get_key(Controls.down)->state)
@@ -609,6 +637,7 @@ void move_piece(void){
         if(piece_collided(Aim.x, Aim.y, &Aim.piece)){
             set_piece(Aim.x, Aim.y - 1, &Aim.piece);
             Aim.piece_setted = true;
+            play_sound(LockPieceSound, 1.0f, false);
         }
     }
 }
@@ -704,7 +733,10 @@ void game_running(void){
     }
 
     if(Aim.piece_setted && !StreakOn){
-        GameOver = !try_spawn_next_piece();
+        if(!try_spawn_next_piece()){
+            GameOver = true;
+            play_sound(GameOverSound, 1.0f, false);
+        }
     }
 
     move_piece();

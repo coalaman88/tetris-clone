@@ -59,7 +59,7 @@ dkms.conf
 
 # Windows
 #*.bat
-*.wav
+#*.wav
 
 # Visual Studio
 .vs/
@@ -71,3 +71,4 @@ rng_test.c
 count_lines.bat
 build.bat
 highscore.dat
+config.ini

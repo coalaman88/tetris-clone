@@ -118,6 +118,7 @@ typedef struct{
 
 Sound load_wave_file(const char *file_name);
 void play_sound(Sound sound, f32 volume, b32 in_loop);
+f32 sound_length(Sound sound);
 
 typedef struct{
     i32 day;

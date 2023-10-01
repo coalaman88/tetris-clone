@@ -9,6 +9,7 @@
 #include <avrt.h>
 
 #include "basic.h"
+#include "engine.h"
 
 #pragma comment (lib, "avrt")
 #pragma comment (lib, "ole32")
@@ -56,9 +57,6 @@ typedef struct{
 } T_AudioPlayer;
 
 T_AudioPlayer AudioState = {0};
-
-Sound BackgroundSound; // @Removeme
-Sound CursorSound; // @Removeme
 
 DWORD roundup_two_power(DWORD value){
     DWORD mask = 0x80000000;
@@ -473,7 +471,7 @@ Sound load_wave_file(const char *file_name){ // FIXME
 	u8 *chunck_p = (u8*)wave + sizeof(WaveFile);
 	i32 original_samples_size = 0;
 	i16 *original_samples = NULL;
-	while(chunck_p < data + size){
+	while(chunck_p < data + size - 4){
 		i32 chunck_id   = *(i32*)(chunck_p + 0);
 		i32 chunck_size = *(i32*)(chunck_p + 4);
 		i16 *data_p     =  (i16*)(chunck_p + 8);
@@ -483,9 +481,9 @@ Sound load_wave_file(const char *file_name){ // FIXME
 		if(chunck_id == 0x61746164){ // "data"
 			original_samples_size = chunck_size;
 			original_samples = data_p;
+			break;
 		}
 	}
-	assert(chunck_p == data + size);
 	assert(original_samples);
 
     //printf("sample_rate: %d/%d\n", wave->sample_rate, audio->bufferFormat->nSamplesPerSec);
@@ -549,4 +547,8 @@ void play_sound(Sound sound, f32 volume, b32 in_loop){
 	free->loop    = in_loop;
 	free->volume  = volume;
 	free->pos     = 0;
+}
+
+f32 sound_length(Sound sound){
+	return (f32)sound.count / (f32)AudioState.internals->bufferFormat->nSamplesPerSec;
 }
