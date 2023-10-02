@@ -46,6 +46,7 @@ Sound RotatePiece;
 Sound GameOverSound;
 Sound ScoreSound;
 Sound TetrisSound;
+
 // Using Super Rotation System
 
 const Piece Line = {
@@ -330,6 +331,25 @@ Font load_system_font(const char *name, i32 font_size){
     return load_font(font_path, font_size);
 }
 
+GameControls default_game_controls(void){
+    GameControls controls = { // @incomplete
+        .left  = KEYCODE_A,
+        .right = KEYCODE_D,
+        .up    = KEYCODE_W,
+        .down  = KEYCODE_S,
+    };
+    return controls;
+}
+
+GameControls load_controls_configuration(void){
+    b32 user_config_exist = false;
+    if(user_config_exist){
+        assert(false); // @incomplete
+    }
+
+    return default_game_controls();
+}
+
 void EngineInit(void){
     b32 result;
     init_renderer();
@@ -368,13 +388,7 @@ void EngineInit(void){
 
     BackgroundSprite = PieceSprite;
 
-    Controls.left  = KEYCODE_A;
-    Controls.right = KEYCODE_D;
-    Controls.up    = KEYCODE_W;
-    Controls.down  = KEYCODE_S;
-
-    BackgroundSound = load_wave_file("C:\\Windows\\Media\\Ring10.wav");
-    CursorSound     = load_wave_file("data\\audio\\sound1.wav");
+    Controls = load_controls_configuration();
 
     //BackgroundSound = load_wave_file("C:\\Windows\\Media\\Ring10.wav");
     CursorSound     = load_wave_file("data\\audio\\ui_move.wav");
