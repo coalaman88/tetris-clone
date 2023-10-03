@@ -10,23 +10,11 @@ typedef struct {
     i32 bitmap[4 * 4];
 }Piece;
 extern const Piece *Pieces[7];
-#define DebugGameSeed 7024193872342
-
-typedef struct{
-    f32 position[2];
-    f32 texture_coord[2];
-    f32 color[4];
-}Vertex;
 
 typedef struct{
     u32 id;
     i32 width, height;
 }TextureInfo;
-
-typedef struct{
-    Vertex v0, v1, v2;
-    Vertex v3, v4, v5;
-}Quad;
 
 typedef struct{
     i32 x, y;

@@ -279,7 +279,6 @@ static void draw_settings_option(f32 x, f32 y, b32 in_focus, b32 waiting_remap, 
 
 struct S_SettingsMenuContext{
     GameControls remap;
-    b32 start;
     b32 waiting_remap;
     i32 cursor_y;
 };
@@ -289,7 +288,6 @@ static struct S_SettingsMenuContext SettingsContext;
 void open_settings_menu(void){
     SettingsContext.cursor_y = 0;
     SettingsContext.waiting_remap = false;
-    SettingsContext.start = false;
     SettingsContext.remap = Controls;
     open_menu(S_Settings);
 }
@@ -300,25 +298,14 @@ static void settings_menu(void){
     i32 key_count  = sizeof(Controls) / sizeof(i32);
     i32 options_count = key_count + 2;
 
-    if(!context->start){
-        context->remap = Controls;
-        context->start = true;
-    }
-
-    if(key_pressed(get_key(Controls.cancel))){
-        close_menu();
-    }
-
     if(context->waiting_remap){
         assert(context->cursor_y < key_count);
         i32 *buttons = (i32*)&context->remap;
         for(i32 code = KEYCODE_A; code < KEYCODE_COUNT; code++){
-            if(code == KEYCODE_ESC) continue;
             if(key_pressed(Keyboard.keys[code - KEYCODE_A])){
                 // clean conflicts
                 for(i32 j = 0; j < key_count; j++){
-                    if(buttons[j] == code)
-                        buttons[j] = KEYCODE_NONE;
+                    if(buttons[j] == code) buttons[j] = KEYCODE_NONE;
                 }
                 buttons[context->cursor_y] = code;
                 context->waiting_remap = false;
@@ -339,7 +326,10 @@ static void settings_menu(void){
                 play_sound(ScoreSound, 1.0f, false);
                 close_menu();
             }
+        } else if(key_pressed(get_key(Controls.cancel))){
+            close_menu();
         }
+
         move_cursor(&context->cursor_y, options_count - 1);
     }
 

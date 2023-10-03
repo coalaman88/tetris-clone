@@ -51,6 +51,17 @@ PFNGLVERTEXATTRIBIPOINTERPROC glVertexAttribIPointer;
 PFNGLGENVERTEXARRAYSPROC glGenVertexArrays;
 PFNGLBINDVERTEXARRAYPROC glBindVertexArray;
 
+typedef struct{
+    f32 position[2];
+    f32 texture_coord[2];
+    f32 color[4];
+}Vertex;
+
+typedef struct{
+    Vertex v0, v1, v2;
+    Vertex v3, v4, v5;
+}Quad;
+
 const Vec4 White_v4  = {1.0f, 1.0f, 1.0f, 1.0f};
 const Vec4 Black_v4  = {0.0f, 0.0f, 0.0f, 1.0f};
 const Vec4 Red_v4    = {1.0f, 0.0f, 0.0f, 1.0f};
