@@ -107,7 +107,7 @@ static void main_menu(void){
     const i32 max_y = 3;
     move_cursor(&main_cursor_y, max_y);
 
-    if(key_pressed(*get_key(Controls.confirme))){
+    if(key_pressed(get_key(Controls.confirme))){
         if(main_cursor_y == 0){        // start game
             GameMode = GM_Running;
         } else if(main_cursor_y == 1){ // heighsocre
@@ -179,7 +179,7 @@ static void highscore_menu(void){
 
     struct S_HighScoreMenuState *state = &HighScoreMenuState;
     
-    if(key_pressed(*get_key(Controls.cancel)) && !state->insert_mode_on)
+    if(key_pressed(get_key(Controls.cancel)) && !state->insert_mode_on)
         close_menu();
 
     // draw
@@ -191,7 +191,7 @@ static void highscore_menu(void){
 
         draw_centered_text(x, y + spacing_y * y_pen++, Blue_v4, "-Scoreboard-");
 
-        if(key_pressed(*get_key(Controls.confirme)) && state->insert_mode_on){
+        if(key_pressed(get_key(Controls.confirme)) && state->insert_mode_on){
             if(strcmp(state->new_name.buffer, "_") != 0){
                 ScoreInfo *info = &HighScore.score[state->insert_board_index];
                 strcpy_s(info->name, array_size(info->name), state->new_name.buffer);
@@ -239,15 +239,15 @@ static void pause_menu(void){
     const i32 max_y = 3;
     move_cursor(&pause_cursor_y, max_y);
 
-    if(key_pressed(*get_key(Controls.cancel))){
+    if(key_pressed(get_key(Controls.cancel))){
         pause_cursor_y = 0;
         close_menu();
     }
 
-    if(key_pressed(*get_key(Controls.confirme))){
+    if(key_pressed(get_key(Controls.confirme))){
         switch(pause_cursor_y){
-            case 0: open_menu(S_Settings); break; // settings menu
-            case 1: close_menu(); break; // resume game
+            case 0: close_menu(); break; // resume game
+            case 1: open_settings_menu(); break; // settings menu
             case 2: open_menu(S_Highscore); break; // scoreboard
             case 3: GameRunning = false; break; // exit game
             default: assert(false);
@@ -263,8 +263,8 @@ static void pause_menu(void){
         f32 y_pen = 0;
         i32 cursor_y = pause_cursor_y;
         draw_centered_text(x, y + spacing_y * y_pen, Green_v4, "Pause"); y_pen++;
-        draw_centered_text(x, y + spacing_y * y_pen, cursor_y == y_pen - 1? White_v4 : grey, "Settings"); y_pen++;
         draw_centered_text(x, y + spacing_y * y_pen, cursor_y == y_pen - 1? White_v4 : grey, "Resume"); y_pen++;
+        draw_centered_text(x, y + spacing_y * y_pen, cursor_y == y_pen - 1? White_v4 : grey, "Settings"); y_pen++;
         draw_centered_text(x, y + spacing_y * y_pen, cursor_y == y_pen - 1? White_v4 : grey, "Scoreboard"); y_pen++;
         draw_centered_text(x, y + spacing_y * y_pen, cursor_y == y_pen - 1? Red_v4 : brightness(Red_v4, 0.8f), "Exit Game"); y_pen++;
     }
@@ -280,7 +280,7 @@ static void draw_settings_option(f32 x, f32 y, b32 in_focus, b32 waiting_remap, 
 struct S_SettingsMenuContext{
     GameControls remap;
     b32 start;
-    i32 waiting_remap;
+    b32 waiting_remap;
     i32 cursor_y;
 };
 
@@ -305,25 +305,29 @@ static void settings_menu(void){
         context->start = true;
     }
 
-    if(key_pressed(*get_key(Controls.cancel))){
+    if(key_pressed(get_key(Controls.cancel))){
         close_menu();
     }
 
     if(context->waiting_remap){
+        assert(context->cursor_y < key_count);
         i32 *buttons = (i32*)&context->remap;
-        // TODO solve conflicting keys!
-        i32 *selected_button = &buttons[context->cursor_y];
-        for(i32 i = KEYCODE_A; i < KEYCODE_COUNT; i++){
-            if(i == KEYCODE_ESC) continue;
-            if(key_pressed(Keyboard.keys[i - KEYCODE_A])){
-                *selected_button = i;
+        for(i32 code = KEYCODE_A; code < KEYCODE_COUNT; code++){
+            if(code == KEYCODE_ESC) continue;
+            if(key_pressed(Keyboard.keys[code - KEYCODE_A])){
+                // clean conflicts
+                for(i32 j = 0; j < key_count; j++){
+                    if(buttons[j] == code)
+                        buttons[j] = KEYCODE_NONE;
+                }
+                buttons[context->cursor_y] = code;
                 context->waiting_remap = false;
                 play_sound(RotatePiece, 1.0f, false);
                 break;
             }
         }
     } else {
-        if(key_pressed(*get_key(Controls.confirme)) && !context->waiting_remap){
+        if(key_pressed(get_key(Controls.confirme)) && !context->waiting_remap){
             if(context->cursor_y < key_count){
                 context->waiting_remap = true;
                 play_sound(RotatePiece, 1.0f, false);

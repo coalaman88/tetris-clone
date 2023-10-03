@@ -418,9 +418,9 @@ f32 repeat_delay  = 0;
 f32 pressed_timer = 0;
 b32 pressed = false;
 
-b32 key_repeat(Key *k){
-    if(!k->state) return false;
-    if(!k->old_state) return true;
+b32 key_repeat(Key k){
+    if(!k.state) return false;
+    if(!k.old_state) return true;
     pressed = true;
     if(pressed_timer >= repeat_delay){
         repeat_delay = secound_repeat_delay;
@@ -617,14 +617,14 @@ void draw_statistics(i32 x, i32 y){
 void move_piece(void){
     if(!is_game_running() | StreakOn) return;
 
-    if(key_pressed(*get_key(Controls.rotate_left))){
+    if(key_pressed(get_key(Controls.rotate_left))){
         Piece new_pos = Aim.piece;
         rotate_piece(&new_pos, -1);
         if(!piece_collided(Aim.x, Aim.y, &new_pos)){
             Aim.piece = new_pos;
             play_sound(RotatePiece, 1.0f, false);
         }
-    } else if(key_pressed(*get_key(Controls.rotate_right))){
+    } else if(key_pressed(get_key(Controls.rotate_right))){
         Piece new_pos = Aim.piece;
         rotate_piece(&new_pos, 1);
         if(!piece_collided(Aim.x, Aim.y, &new_pos)){
@@ -645,7 +645,7 @@ void move_piece(void){
         }
     }
 
-    if(get_key(Controls.down)->state)
+    if(get_key(Controls.down).state)
         GravityCount += TimeElapsed * 10;
 
     if(Debug.falling)
@@ -688,7 +688,7 @@ void prompt(void){
         confirmation_prompt_cursor--;
     warpi(&confirmation_prompt_cursor, 0, 1);
 
-    if(key_pressed(*get_key(Controls.confirme))){
+    if(key_pressed(get_key(Controls.confirme))){
         if(confirmation_prompt_cursor == 1){
             restart_game(true);
             enqueue_message(Green_v4, "Restarted!");
@@ -732,12 +732,12 @@ void game_running(void){
         save_highscore_to_disk(HighScoreFileName, &HighScore);
     }
 
-    if(key_pressed(*get_key(Controls.cancel))){ // Open settings menu
+    if(key_pressed(get_key(Controls.cancel))){ // Open settings menu
         open_menu(S_Pause);
-    } else if(key_pressed(*get_key(Controls.restart))){ // Reset game
+    } else if(key_pressed(get_key(Controls.restart))){ // Reset game
         confirmation_prompt_open = false;
         GameMode = GM_Prompt;
-    } else if(key_pressed(*get_key(Controls.confirme)) && !confirmation_prompt_open){ // Pause game
+    } else if(key_pressed(get_key(Controls.confirme)) && !confirmation_prompt_open){ // Pause game
         if(GameOver){
             i32 placement = highscore_placement(Score, &HighScore);
             if(placement <= array_size(HighScore.score)){

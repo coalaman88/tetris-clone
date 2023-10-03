@@ -88,13 +88,16 @@ typedef struct{
 }GameControls;
 extern GameControls Controls;
 
-static inline Key *get_key(u32 key_code){ // @Move
-    assert(key_code > 0 && key_code < KEYCODE_COUNT);
-    return &Keyboard.keys[key_code - KEYCODE_A];
+static inline Key get_key(u32 key_code){ // @Move
+    assert(key_code < KEYCODE_COUNT);
+    if(key_code == KEYCODE_NONE)
+        return (Key){0};
+    return Keyboard.keys[key_code - KEYCODE_A];
 }
 
 static inline b32 button_pressed(u32 key_code){ // @Move
-    assert(key_code > 0 && key_code < KEYCODE_COUNT);
+    assert(key_code < KEYCODE_COUNT);
+    if(key_code == 0) return false;
     return key_pressed(Keyboard.keys[key_code - KEYCODE_A]);
 }
 
