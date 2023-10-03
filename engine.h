@@ -16,6 +16,7 @@ extern u32 FramesPerSec;
 extern f32 TimeElapsed;
 
 enum Enum_KeyboardKeyCodes{
+    KEYCODE_NONE,
     KEYCODE_A, KEYCODE_B,
     KEYCODE_C, KEYCODE_D,
     KEYCODE_E, KEYCODE_F,
@@ -88,13 +89,13 @@ typedef struct{
 extern GameControls Controls;
 
 static inline Key *get_key(u32 key_code){ // @Move
-    assert(key_code < KEYCODE_COUNT);
-    return &Keyboard.keys[key_code];
+    assert(key_code > 0 && key_code < KEYCODE_COUNT);
+    return &Keyboard.keys[key_code - KEYCODE_A];
 }
 
 static inline b32 button_pressed(u32 key_code){ // @Move
-    assert(key_code < KEYCODE_COUNT);
-    return key_pressed(Keyboard.keys[key_code]);
+    assert(key_code > 0 && key_code < KEYCODE_COUNT);
+    return key_pressed(Keyboard.keys[key_code - KEYCODE_A]);
 }
 
 extern b32 GameRunning;

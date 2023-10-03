@@ -55,6 +55,7 @@ enum MenuScreens{
 
 void menu(void);
 void open_menu(i32 destination);
+void open_settings_menu(void);
 
 typedef struct{
     char name[6];

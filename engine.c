@@ -9,6 +9,7 @@ struct S_Mouse Mouse;
 struct S_Keyboard Keyboard = {0};
 
 const char *KeyNames[] = {
+    "none",
     "a", "b", "c", "d",
     "e", "f", "g", "h",
     "i", "j", "k", "l",
