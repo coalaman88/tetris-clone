@@ -83,3 +83,11 @@ void enqueue_message(Vec4 color, const char *format, ...);
 
 extern Sound BackgroundSound;
 extern Sound CursorSound;
+extern Sound MovePieceSound;
+extern Sound LockPieceSound;
+extern Sound RotatePiece;
+extern Sound GameOverSound;
+extern Sound ScoreSound;
+extern Sound TetrisSound;
+
+GameControls default_game_controls(void);

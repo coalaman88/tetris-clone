@@ -107,7 +107,7 @@ static void main_menu(void){
     const i32 max_y = 3;
     move_cursor(&main_cursor_y, max_y);
 
-    if(key_pressed(Keyboard.enter)){
+    if(key_pressed(*get_key(Controls.confirme))){
         if(main_cursor_y == 0){        // start game
             GameMode = GM_Running;
         } else if(main_cursor_y == 1){ // heighsocre
@@ -179,7 +179,7 @@ static void highscore_menu(void){
 
     struct S_HighScoreMenuState *state = &HighScoreMenuState;
     
-    if(key_pressed(Keyboard.esc) && !state->insert_mode_on)
+    if(key_pressed(*get_key(Controls.cancel)) && !state->insert_mode_on)
         close_menu();
 
     // draw
@@ -191,7 +191,7 @@ static void highscore_menu(void){
 
         draw_centered_text(x, y + spacing_y * y_pen++, Blue_v4, "-Scoreboard-");
 
-        if(key_pressed(Keyboard.enter) && state->insert_mode_on){
+        if(key_pressed(*get_key(Controls.confirme)) && state->insert_mode_on){
             if(strcmp(state->new_name.buffer, "_") != 0){
                 ScoreInfo *info = &HighScore.score[state->insert_board_index];
                 strcpy_s(info->name, array_size(info->name), state->new_name.buffer);
@@ -239,12 +239,12 @@ static void pause_menu(void){
     const i32 max_y = 3;
     move_cursor(&pause_cursor_y, max_y);
 
-    if(key_pressed(Keyboard.esc)){
+    if(key_pressed(*get_key(Controls.cancel))){
         pause_cursor_y = 0;
         close_menu();
     }
 
-    if(key_pressed(Keyboard.enter)){
+    if(key_pressed(*get_key(Controls.confirme))){
         switch(pause_cursor_y){
             case 0: open_menu(S_Settings); break; // settings menu
             case 1: close_menu(); break; // resume game
@@ -271,56 +271,69 @@ static void pause_menu(void){
 }
 
 static void draw_settings_option(f32 x, f32 y, b32 in_focus, b32 waiting_remap, i32 key_code, const char *text){
-    Vec4 color = in_focus? (waiting_remap? Green_v4 : White_v4) : Vec4(1.0f, 1.0f, 1.0f, 0.3f);
+    Vec4 c = White_v4;
+    Vec4 color = in_focus? (waiting_remap? Green_v4 : White_v4) : Vec4(c.x, c.y, c.z, 0.3f);
     draw_centered_text(x, y, color, "%s %s", text, KeyNames[key_code]);
 }
 
 static void settings_menu(void){
     static i32 waiting_remap = false;
     static i32 cursor_y = 0;
-    i32 opetions_count = 4;
+    i32 opetions_count = 10;
 
-    if(key_pressed(Keyboard.esc)){
+    if(key_pressed(*get_key(Controls.cancel))){
         waiting_remap = false;
         close_menu();
     }
 
     if(waiting_remap){
-        i32 *buttons[] = {
-            &Controls.left,
-            &Controls.right,
-            &Controls.up,
-            &Controls.down,
-        };
-        assert(array_size(buttons) == opetions_count);
+        i32 *buttons = (i32*)&Controls;
         // TODO solve conflicting keys!
-        i32 *selected_button = buttons[cursor_y];
-    	for(i32 i = KEYCODE_A; i < KEYCODE_COUNT; i++){
+        i32 *selected_button = &buttons[cursor_y];
+        for(i32 i = KEYCODE_A; i < KEYCODE_COUNT; i++){
             if(i == KEYCODE_ESC) continue;
             if(key_pressed(Keyboard.keys[i])){
                 *selected_button = i;
                 waiting_remap = false;
+                play_sound(RotatePiece, 1.0f, false);
                 break;
             }
         }
     } else {
         move_cursor(&cursor_y, opetions_count - 1);
-        if(key_pressed(Keyboard.enter) && !waiting_remap){
-            waiting_remap = true;
+        if(key_pressed(*get_key(Controls.confirme)) && !waiting_remap){
+            i32 buttons_count = sizeof(Controls) / sizeof(i32);
+            if(cursor_y < buttons_count){
+                waiting_remap = true;
+            } else { // reset controls
+                Controls = default_game_controls();
+            }
+            play_sound(RotatePiece, 1.0f, false);
         }
+        
     }
 
+    clear_screen(Vec4(0.1f, 0.1f, 0.1f, 0.0f));
+    //set_font(&DefaultFont);
+    
     f32 line_height = (f32)CurrentFont->line_height;
     f32 y = WHEIGHT * .5f - line_height * opetions_count * 0.5f;
     f32 w = WWIDTH  * .5f;
     f32 pen_y = 0;
-
-    // TODO incomplete
-    clear_screen(Vec4(0.1f, 0.1f, 0.1f, 0.0f));
+    draw_centered_text(w, y + line_height * (pen_y - 1), Yellow_v4, "Remap Controls");
     draw_settings_option(w, y + line_height * pen_y, cursor_y == pen_y, waiting_remap, Controls.left, "Move Left:"); pen_y++;
     draw_settings_option(w, y + line_height * pen_y, cursor_y == pen_y, waiting_remap, Controls.right, "Move Right:"); pen_y++;
     draw_settings_option(w, y + line_height * pen_y, cursor_y == pen_y, waiting_remap, Controls.up, "Move Up:"); pen_y++;
     draw_settings_option(w, y + line_height * pen_y, cursor_y == pen_y, waiting_remap, Controls.down, "Move Down:"); pen_y++;
+    draw_settings_option(w, y + line_height * pen_y, cursor_y == pen_y, waiting_remap, Controls.rotate_left, "Rotate Left:"); pen_y++;
+    draw_settings_option(w, y + line_height * pen_y, cursor_y == pen_y, waiting_remap, Controls.rotate_right, "Rotate Right:"); pen_y++;
+    draw_settings_option(w, y + line_height * pen_y, cursor_y == pen_y, waiting_remap, Controls.confirme, "Confirm:"); pen_y++;
+    draw_settings_option(w, y + line_height * pen_y, cursor_y == pen_y, waiting_remap, Controls.cancel, "Cancel:"); pen_y++;
+    draw_settings_option(w, y + line_height * pen_y, cursor_y == pen_y, waiting_remap, Controls.restart, "Restart:"); pen_y++;
+    Vec4 color = White_v4;
+    color.w = 0.3f;
+    draw_centered_text(w, y + line_height * pen_y, cursor_y == pen_y? Red_v4 : color, "Reset Controls");
+    
 }
 
 void menu(void){

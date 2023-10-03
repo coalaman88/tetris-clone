@@ -337,6 +337,11 @@ GameControls default_game_controls(void){
         .right = KEYCODE_D,
         .up    = KEYCODE_W,
         .down  = KEYCODE_S,
+        .rotate_left  = KEYCODE_Q,
+        .rotate_right = KEYCODE_E,
+        .confirme = KEYCODE_ENTER,
+        .cancel   = KEYCODE_ESC,
+        .restart  = KEYCODE_O,
     };
     return controls;
 }
@@ -612,14 +617,14 @@ void draw_statistics(i32 x, i32 y){
 void move_piece(void){
     if(!is_game_running() | StreakOn) return;
 
-    if(key_pressed(Keyboard.q)){
+    if(key_pressed(*get_key(Controls.rotate_left))){
         Piece new_pos = Aim.piece;
         rotate_piece(&new_pos, -1);
         if(!piece_collided(Aim.x, Aim.y, &new_pos)){
             Aim.piece = new_pos;
             play_sound(RotatePiece, 1.0f, false);
         }
-    } else if(key_pressed(Keyboard.e)){
+    } else if(key_pressed(*get_key(Controls.rotate_right))){
         Piece new_pos = Aim.piece;
         rotate_piece(&new_pos, 1);
         if(!piece_collided(Aim.x, Aim.y, &new_pos)){
@@ -683,7 +688,7 @@ void prompt(void){
         confirmation_prompt_cursor--;
     warpi(&confirmation_prompt_cursor, 0, 1);
 
-    if(key_pressed(Keyboard.enter)){
+    if(key_pressed(*get_key(Controls.confirme))){
         if(confirmation_prompt_cursor == 1){
             restart_game(true);
             enqueue_message(Green_v4, "Restarted!");
@@ -727,12 +732,12 @@ void game_running(void){
         save_highscore_to_disk(HighScoreFileName, &HighScore);
     }
 
-    if(key_pressed(Keyboard.esc)){ // Open settings menu
+    if(key_pressed(*get_key(Controls.cancel))){ // Open settings menu
         open_menu(S_Pause);
-    } else if(key_pressed(Keyboard.o)){ // Reset game
+    } else if(key_pressed(*get_key(Controls.restart))){ // Reset game
         confirmation_prompt_open = false;
         GameMode = GM_Prompt;
-    } else if(key_pressed(Keyboard.enter) && !confirmation_prompt_open){ // Pause game
+    } else if(key_pressed(*get_key(Controls.confirme)) && !confirmation_prompt_open){ // Pause game
         if(GameOver){
             i32 placement = highscore_placement(Score, &HighScore);
             if(placement <= array_size(HighScore.score)){
@@ -824,7 +829,9 @@ void game_running(void){
         KeyNames[Controls.left],
         KeyNames[Controls.down],
         KeyNames[Controls.right],
-        "q", "e", "o"
+        KeyNames[Controls.rotate_left],
+        KeyNames[Controls.rotate_right],
+        KeyNames[Controls.restart]
     );
 }
 

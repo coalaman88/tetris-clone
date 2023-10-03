@@ -82,6 +82,8 @@ extern struct S_Mouse Mouse;
 
 typedef struct{
     i32 left, right, up, down;
+    i32 rotate_left, rotate_right;
+    i32 confirme, cancel, restart;
 }GameControls;
 extern GameControls Controls;
 
