@@ -79,7 +79,7 @@ Font load_font(const char *name, i32 height_pixel_size){
         .row_width_left = atlas_size,
         .height_left = atlas_size,
         .row_break = 0,
-        .buffer = malloc(atlas.width * atlas.height * sizeof(u32)),
+        .buffer = os_memory_alloc(atlas.width * atlas.height * sizeof(u32)),
     };
 
     Color color = rgba_color(Vec4(1, 1, 1, .2f));
@@ -106,7 +106,7 @@ Font load_font(const char *name, i32 height_pixel_size){
     font.atlas.width  = atlas.width;
     font.atlas.height = atlas.height;
 
-    free(atlas.buffer);
+    os_memory_free(atlas.buffer);
     FT_Done_Face(face);
     return font;
 }

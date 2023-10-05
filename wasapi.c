@@ -411,7 +411,7 @@ Sound load_sin_wave(size_t sample_rate, u32 bytes_per_sample, f64 seconds){
     size_t sample_buffer_size = bytes_per_sample / 2 * samples_count;
 	
 	Sound sound = {
-		.samples = malloc(sample_buffer_size),
+		.samples = os_memory_alloc(sample_buffer_size),
 		.count   = samples_count,
 	};
 
@@ -456,7 +456,7 @@ f32 lerp(f32 v0, f32 v1, f32 t) { // @Move
   return (1.0f - t) * v0 + t * v1;
 }
 
-Sound load_wave_file(const char *file_name){ // FIXME
+Sound load_wave_file(const char *file_name){
 	const WasapiAudio *audio = AudioState.internals;
 	HANDLE file = CreateFileA(file_name, GENERIC_READ,  FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
     i32 size;
@@ -497,7 +497,7 @@ Sound load_wave_file(const char *file_name){ // FIXME
 		assert(wave->sample_rate < (i32)audio->bufferFormat->nSamplesPerSec);
 		f32 time = (f32)original_samples_count / (f32)wave->sample_rate;
 		sample_count = (i32)(time * audio->bufferFormat->nSamplesPerSec);
-		samples = malloc(sample_count * sizeof(i16)); // TODO remove std malloc
+		samples = os_memory_alloc(sample_count * sizeof(i16));
 		//printf("ratio: %f\n", (f32)sample_count / (f32)original_samples_count);
 
 		// silly resampling
@@ -512,7 +512,7 @@ Sound load_wave_file(const char *file_name){ // FIXME
 		}
 	} else {
 		sample_count = original_samples_count;
-		samples = malloc(original_samples_size); // TODO remove std malloc
+		samples = os_memory_alloc(original_samples_size);
 		memcpy(samples, original_samples, original_samples_size);
 	}
 

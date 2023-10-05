@@ -46,7 +46,7 @@ b32 update_file_info(void *info_handle){
 }
 
 void *create_file_info(void *file){
-    struct FileInfo *info = malloc(sizeof(struct FileInfo));
+    struct FileInfo *info = os_memory_alloc(sizeof(struct FileInfo));
     info->file = file;
     GetFileTime(info->file, NULL, NULL, &info->last_write);
     return info;
@@ -398,10 +398,10 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
-char* read_whole_file(void* file, i32 *size){
+u8* read_whole_file(void* file, i32 *size){
     HANDLE *_file = (HANDLE*)file;
     u32 file_size = GetFileSize(_file, NULL);
-    char *buffer = VirtualAlloc(NULL, file_size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+    u8 *buffer = os_memory_alloc(file_size);
     DWORD read;
     i32 result = ReadFile(_file, (void*)buffer, file_size, &read, NULL);
     assert(result);
@@ -409,10 +409,6 @@ char* read_whole_file(void* file, i32 *size){
     SetFilePointer(_file, 0, 0, FILE_BEGIN);
     if(size) *size = file_size;
     return buffer;
-}
-
-void FreeFile(void *mem){
-    VirtualFree(mem, 0, MEM_RELEASE);
 }
 
 char* os_font_path(char *buffer, u32 size, const char *append){
@@ -433,4 +429,15 @@ Date os_get_local_time(void){
         .year  = time.wYear
     };
     return date;
+}
+
+void *os_memory_alloc(size_t bytes){ // TODO reduce allocation calls?
+    void *address = VirtualAlloc(NULL, bytes, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+    assert(address);
+    return address;
+}
+
+void os_memory_free(void *address){
+    BOOL result = VirtualFree(address, 0, MEM_RELEASE);
+    assert(result);
 }

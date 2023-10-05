@@ -1,9 +1,3 @@
-#define BASIC_IMPLEMENT
-#define UTIL_IMPLEMENT
-
-#pragma comment(lib, "dependencies\\freetype-lib\\x64\\freetype.lib")
-#pragma comment(lib, "opengl32.lib")
-
 #include "engine.h"
 #include "basic.h"
 #include "game.h"

@@ -272,8 +272,8 @@ static GLuint create_program(HANDLE vert_file, HANDLE frag_file){
     i32 error_string_size;
 
     i32 vert_size, frag_size;
-    const char *vert_data = read_whole_file(vert_file, &vert_size);
-    const char *frag_data = read_whole_file(frag_file, &frag_size);
+    char *vert_data = (char*)read_whole_file(vert_file, &vert_size);
+    char *frag_data = (char*)read_whole_file(frag_file, &frag_size);
 
     GLuint frag = glCreateShader(GL_FRAGMENT_SHADER);
     GLuint vert = glCreateShader(GL_VERTEX_SHADER);
@@ -281,8 +281,8 @@ static GLuint create_program(HANDLE vert_file, HANDLE frag_file){
     glShaderSource(frag, 1, &frag_data, &frag_size);
     glShaderSource(vert, 1, &vert_data, &vert_size);
 
-    VirtualFree((void*)vert_data, 0, MEM_RELEASE);
-    VirtualFree((void*)frag_data, 0, MEM_RELEASE);
+    os_memory_free(vert_data);
+    os_memory_free(frag_data);
 
     if(!compile_shader(frag) || !compile_shader(vert))
          return 0;
