@@ -136,10 +136,15 @@ typedef struct{
 b32 update_file_info(void *info_handle);
 void *get_file_handle(void *file_info); // @debug
 void *create_file_info(void *file); // @debug
-u8* read_whole_file(void *file, i32 *size);
+void *os_open_file(const char *name);
+b32 os_close_file(void *file);
+u8* os_read_whole_file(const char *name, i32 *bytes);
+u8* os_read_whole_file_handle(void *file_handle, i32 *size);
+b32 os_write_to_file(void *data, i32 bytes, const char *name);
+b32 os_read_file(const char *name, void *buffer, i32 bytes);
 char* os_font_path(char *buffer, u32 size, const char *append);
 Date os_get_local_time(void);
 void *os_memory_alloc(size_t bytes);
-void os_memory_free(void *address);
+b32 os_memory_free(void *address);
 
 #endif

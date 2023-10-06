@@ -398,17 +398,75 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
-u8* read_whole_file(void* file, i32 *size){
-    HANDLE *_file = (HANDLE*)file;
-    u32 file_size = GetFileSize(_file, NULL);
+void *os_open_file(const char *name){
+    HANDLE file = CreateFileA(name, GENERIC_READ | GENERIC_WRITE,  FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    return file != INVALID_HANDLE_VALUE? file : NULL;
+}
+
+b32 os_close_file(void *file){
+    return CloseHandle((HANDLE)file) != 0;
+}
+
+u8* os_read_whole_file_handle(void* file_handle, i32 *bytes){
+    HANDLE file = (HANDLE)file_handle;
+    *bytes = 0;
+
+    u32 file_size = GetFileSize(file, NULL);
     u8 *buffer = os_memory_alloc(file_size);
+    if(!buffer){
+        return NULL;
+    }
+
     DWORD read;
-    i32 result = ReadFile(_file, (void*)buffer, file_size, &read, NULL);
-    assert(result);
-    assert(read == file_size);
-    SetFilePointer(_file, 0, 0, FILE_BEGIN);
-    if(size) *size = file_size;
+    b32 result = ReadFile(file, (void*)buffer, file_size, &read, NULL);
+    if(!result || read != file_size){
+        os_memory_free(buffer);
+        return NULL;
+    }
+
+    SetFilePointer(file, 0, 0, FILE_BEGIN);
+    *bytes = file_size;
     return buffer;
+}
+
+u8* os_read_whole_file(const char *name, i32 *bytes){
+    *bytes = 0;
+    HANDLE file = CreateFileA(name, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    if(file == INVALID_HANDLE_VALUE)
+        return NULL;
+
+    u32 file_size = GetFileSize(file, NULL);
+    u8 *buffer = os_memory_alloc(file_size);
+    if(!buffer){
+        CloseHandle(file);
+        return NULL;
+    }
+
+    DWORD read;
+    i32 result = ReadFile(file, (void*)buffer, file_size, &read, NULL);
+    CloseHandle(file);
+
+    if(!result || read != file_size)
+        return NULL;
+
+    *bytes = file_size;
+    return buffer;
+}
+
+b32 os_write_to_file(void *data, i32 bytes, const char *name){
+    DWORD written;
+    HANDLE file = CreateFileA(name, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    BOOL result = WriteFile(file, data, (DWORD)bytes, &written, NULL);
+    CloseHandle(file);
+    return (result != 0 && written == (DWORD)bytes);
+}
+
+b32 os_read_file(const char *name, void *buffer, i32 bytes){
+    DWORD read;
+    HANDLE file = CreateFileA(name, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    BOOL result = ReadFile(file, (void*)buffer, bytes, &read, NULL);
+    CloseHandle(file);
+    return (result != 0 && read == (DWORD)bytes);
 }
 
 char* os_font_path(char *buffer, u32 size, const char *append){
@@ -432,12 +490,9 @@ Date os_get_local_time(void){
 }
 
 void *os_memory_alloc(size_t bytes){ // TODO reduce allocation calls?
-    void *address = VirtualAlloc(NULL, bytes, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
-    assert(address);
-    return address;
+    return VirtualAlloc(NULL, bytes, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
 }
 
-void os_memory_free(void *address){
-    BOOL result = VirtualFree(address, 0, MEM_RELEASE);
-    assert(result);
+b32 os_memory_free(void *address){
+    return VirtualFree(address, 0, MEM_RELEASE) != 0;
 }

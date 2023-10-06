@@ -458,10 +458,9 @@ f32 lerp(f32 v0, f32 v1, f32 t) { // @Move
 
 Sound load_wave_file(const char *file_name){
 	const WasapiAudio *audio = AudioState.internals;
-	HANDLE file = CreateFileA(file_name, GENERIC_READ,  FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-    i32 size;
-    u8 *data = (u8*)read_whole_file(file, &size);
-    CloseHandle(file);
+	i32 size;
+	u8 *data = os_read_whole_file(file_name, &size);
+	assert(data);
     WaveFile *wave = (WaveFile*)data;
 	assert(size > sizeof(WaveFile));
 	assert(wave->riff_chunck_id   == 0x46464952); // "RIFF"
@@ -516,7 +515,7 @@ Sound load_wave_file(const char *file_name){
 		memcpy(samples, original_samples, original_samples_size);
 	}
 
-    VirtualFree(data, 0, MEM_RELEASE);
+	os_memory_free(data);
 
 	Sound sound = {
 		.samples = samples,

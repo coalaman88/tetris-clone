@@ -543,10 +543,8 @@ void update_grid(void){
 }
 
 void save_grid(void){ // @debug
-    FILE *file = fopen("grid.bin", "w+b");
-    size_t written = fwrite(Grid, sizeof(Grid), 1, file);
-    fclose(file);
-    if(!written){
+    b32 result = os_write_to_file(Grid, sizeof(Grid), "grid.bin");
+    if(!result){
         enqueue_message(Red_v4, "Can't write file!");
         return;
     }
@@ -554,23 +552,19 @@ void save_grid(void){ // @debug
 }
 
 void load_grid(void){ // @debug
-    FILE *file = fopen("grid.bin", "rb");
-    if(!file){
-        enqueue_message(Red_v4, "No grid save file found!");
-        return;
-    }
-    size_t read = fread(Grid, sizeof(Grid), 1, file);
-    fclose(file);
-    if(!read){
+    b32 result = os_read_file("grid.bin", Grid, sizeof(Grid));
+    if(!result){
         enqueue_message(Red_v4, "Can't read file!");
         return;
     }
+    restart_game(false);
     enqueue_message(Green_v4, "Grid loaded!");
 }
 
 void restart_game(b32 clear_grid){
-    if(clear_grid)
+    if(clear_grid){
         memset(Grid, 0, sizeof(Grid)); // clean grid
+    }
     Aim.next_piece = random_piece();
     spawn_next_piece();
     GravityCount = 0;
@@ -714,7 +708,6 @@ void game_running(void){
         save_grid();
     if(Keyboard.r_ctrl.state && key_pressed(Keyboard.l)){
         load_grid();
-        restart_game(false);
     }
     if(Keyboard.r_ctrl.state && Keyboard.n.state){
         spawn_next_piece();
