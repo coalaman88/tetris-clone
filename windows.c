@@ -107,27 +107,27 @@ static void LoadOpenGLFunctions(void){
     glGenBuffers = GetAnyGLFuncAddress("glGenBuffers");
 
     // GL_VERSION_2_0
-    glCreateShader    = GetAnyGLFuncAddress("glCreateShader");
-    glShaderSource    = GetAnyGLFuncAddress("glShaderSource");
+    glCreateShader  = GetAnyGLFuncAddress("glCreateShader");
+    glShaderSource  = GetAnyGLFuncAddress("glShaderSource");
     glCompileShader = GetAnyGLFuncAddress("glCompileShader");
-    glGetShaderiv     = GetAnyGLFuncAddress("glGetShaderiv");
+    glGetShaderiv   = GetAnyGLFuncAddress("glGetShaderiv");
     glCreateProgram = GetAnyGLFuncAddress("glCreateProgram");
-    glAttachShader    = GetAnyGLFuncAddress("glAttachShader");
-    glLinkProgram     = GetAnyGLFuncAddress("glLinkProgram");
-    glGetProgramiv    = GetAnyGLFuncAddress("glGetProgramiv");
-    glUseProgram        = GetAnyGLFuncAddress("glUseProgram");
+    glAttachShader  = GetAnyGLFuncAddress("glAttachShader");
+    glLinkProgram   = GetAnyGLFuncAddress("glLinkProgram");
+    glGetProgramiv  = GetAnyGLFuncAddress("glGetProgramiv");
+    glUseProgram    = GetAnyGLFuncAddress("glUseProgram");
     glDeleteProgram = GetAnyGLFuncAddress("glDeleteProgram");
     glGetProgramInfoLog = GetAnyGLFuncAddress("glGetProgramInfoLog");
-    glGetShaderInfoLog = GetAnyGLFuncAddress("glGetShaderInfoLog");
+    glGetShaderInfoLog  = GetAnyGLFuncAddress("glGetShaderInfoLog");
     glEnableVertexAttribArray = GetAnyGLFuncAddress("glEnableVertexAttribArray");
-    glVertexAttribPointer = GetAnyGLFuncAddress("glVertexAttribPointer");
+    glVertexAttribPointer  = GetAnyGLFuncAddress("glVertexAttribPointer");
     glVertexAttribIPointer = GetAnyGLFuncAddress("glVertexAttribIPointer");
     glBindBuffer = GetAnyGLFuncAddress("glBindBuffer");
     glDisableVertexAttribArray = GetAnyGLFuncAddress("glDisableVertexAttribArray");
     glBufferData = GetAnyGLFuncAddress("glBufferData");
     glBufferSubData = GetAnyGLFuncAddress("glBufferSubData");
     glUniform3fv = GetAnyGLFuncAddress("glUniform3fv");
-    glUniform2f = GetAnyGLFuncAddress("glUniform2f");
+    glUniform2f  = GetAnyGLFuncAddress("glUniform2f");
     glUniform1iv = GetAnyGLFuncAddress("glUniform1iv");
     glGetUniformLocation = GetAnyGLFuncAddress("glGetUniformLocation");
     glDeleteShader = GetAnyGLFuncAddress("glDeleteShader");
@@ -154,7 +154,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(pCmdLine);
 
-    //Create Console
+    // Create Console
     if(!AttachConsole(ATTACH_PARENT_PROCESS))
         AllocConsole();
 

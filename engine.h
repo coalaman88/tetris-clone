@@ -71,10 +71,6 @@ static inline b32 key_pressed(Key k){
     return k.state && !k.old_state;
 }
 
-static inline b32 key_pressed_sticky(Key *k){
-    return key_pressed(*k)? k->state = false, true : false;
-}
-
 b32 key_repeat(i32 keycode);
 
 struct S_Mouse{

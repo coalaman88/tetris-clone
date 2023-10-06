@@ -615,18 +615,33 @@ void move_piece(void){
         }
     }
 
-    // TODO use some delay
-    if(key_repeat(Controls.left)){
-        if(!piece_collided(Aim.x - 1, Aim.y, &Aim.piece)){
-            Aim.x -= 1;
-            play_sound(MovePieceSound, 0.5f, false);
-        }
-    } else if(key_repeat(Controls.right)){
-        if(!piece_collided(Aim.x + 1, Aim.y, &Aim.piece)){
-            Aim.x += 1;
-            play_sound(MovePieceSound, 0.5f, false);
-        }
+    static f32 delay_time = 1.0f / 10.0f;
+    static f32 delay  = 0;
+
+    static i32 lock_key  = 0;
+    static i32 direction = 0;
+    if(key_pressed(get_key(Controls.left))){
+        lock_key  = Controls.left;
+        direction = -1;
     }
+    if(key_pressed(get_key(Controls.right))){
+        lock_key  = Controls.right;
+        direction = 1;
+    }
+
+    if(get_key(lock_key).state){
+        if(delay >= delay_time){
+            i32 new_pos = Aim.x + 1 * direction;
+            if(!piece_collided(new_pos, Aim.y, &Aim.piece)){
+                Aim.x = new_pos;
+                play_sound(MovePieceSound, 0.5f, false);
+            }
+            delay = 0;
+        }
+    } else {
+        lock_key = 0;
+    }
+    delay += TimeElapsed;
 
     if(get_key(Controls.down).state)
         GravityCount += TimeElapsed * 10;
