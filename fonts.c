@@ -128,7 +128,7 @@ void render_glyph(GlyphInfo g, f32 x, f32 y, Vec4 color){
     draw_sprite(x, y, 1.0f, color, glyph);
 }
 
-i32 count_glyphs_advance(const char *string){
+i32 count_text_width(const char *string){
     i32 pen = 0;
     while(*string)
         pen += CurrentFont->glyphs[(i32)*string++].advance;
@@ -165,7 +165,7 @@ i32 draw_centered_text(f32 x, f32 y, Vec4 color, const char *format, ...){
     vsprintf_s(buffer, sizeof(buffer), format, args);
     va_end(args);
 
-    i32 half_text_width = count_glyphs_advance(buffer) / 2;
+    i32 half_text_width = count_text_width(buffer) / 2;
     draw_text(x - (f32)half_text_width, y, color, buffer);
     return half_text_width;
 }

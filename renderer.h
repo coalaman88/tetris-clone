@@ -80,3 +80,4 @@ void set_font(Font *font);
 i32 draw_text(f32 x, f32 y, Vec4 color, const char *format, ...);
 i32 draw_centered_text(f32 x, f32 y, Vec4 color, const char *format, ...);
 i32 draw_text_warped(Rect rec, Vec4 color, const char *format, ...);
+i32 count_text_width(const char *string);

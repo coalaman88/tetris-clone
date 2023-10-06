@@ -171,8 +171,25 @@ struct DebugMessageQueue_S{
 
 void update_messages(void){
     struct DebugMessageQueue_S *log = &DebugMessageQueue;
-    const f32 spacing = 30;
-    f32 offset = (f32)CurrentFont->line_height;
+
+    Font *font = CurrentFont;
+    set_font(&DebugFont);
+    
+    Vec4 bg_color = Vec4(Black_v4.x, Black_v4.y, Black_v4.z, 0.7f);
+    f32 spacing = (f32)CurrentFont->line_height * 1.3f;
+    f32 offset  = spacing;
+    f32 x = 0.0f;
+    f32 y = WHEIGHT - offset;
+    f32 border = 10.0f;
+
+    for(i32 i = log->start; i != log->end; i = (i + 1) % array_size(log->messages)){
+        DebugMessage *m = &log->messages[i];
+        f32 width = (f32)count_text_width(m->content) + border * 2;
+        draw_rect(x, y, width, spacing, bg_color);
+        draw_text(x + border, y, m->color, m->content);
+        y -= spacing;
+    }
+    set_font(font);
 
     if(log->end - log->start != 0){
         log->time += TimeElapsed;
@@ -180,12 +197,6 @@ void update_messages(void){
             log->start = (log->start + 1) % array_size(log->messages);
             log->time = 0;
         }
-    }
-
-    for(i32 i = log->start; i != log->end; i = (i + 1) % array_size(log->messages)){
-        DebugMessage *m = &log->messages[i];
-        draw_text(0, WHEIGHT - offset - 6.0f, m->color, m->content);
-        offset += spacing;
     }
 }
 
@@ -389,7 +400,7 @@ void EngineInit(void){
         HighScore = saved_data.highscore;
         Controls  = saved_data.controls;
     } else {
-        debug_message(Red_v4, "Fail to read saved data! Bad version or no saved found");
+        debug_message(Red_v4, "Failed to read saved data! Bad version or no save found");
         set_zero(&HighScore, sizeof(HighScore));
         Controls = default_game_controls();
     }
