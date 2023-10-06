@@ -56,14 +56,21 @@ typedef struct{
     ScoreInfo score[5];
 }Scoreboard;
 
+typedef struct{
+    i32 save_version;
+    Scoreboard highscore;
+    GameControls controls;
+}SaveData;
+
+#define SAVE_DATA_FILE_NAME "save.dat"
+#define SAVE_DATA_VERSION 1
+
+#define DEBUG_GRID_FILE_NAME "grid.bin" // @Debug
+
 extern Scoreboard HighScore;
 
-#define SCOREBOARD_FILE_VERSION "0.2"
-#define SCOREBOARD_FILE_VERSION_SIZE 3
-
 extern const char *HighScoreFileName;
-b32 save_highscore_to_disk(const char *, Scoreboard *);
-b32 load_highscore_from_disk(const char *, Scoreboard *);
+b32 save_data_to_disk(void);
 void insert_in_scoreboard(i32 score, i32 placement);
 void init_highscore_menu_in_insert_mode(i32 board_position);
 void restart_game(b32 clear_grid);

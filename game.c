@@ -189,7 +189,7 @@ void update_messages(void){
     }
 }
 
-void enqueue_message(Vec4 color, const char *format, ...){
+void debug_message(Vec4 color, const char *format, ...){
     char message[member_size(DebugMessage, content)];
     va_list args;
     va_start(args, format);
@@ -362,11 +362,6 @@ void EngineInit(void){
     Aim.next_piece = random_piece();
     spawn_next_piece();
 
-    result = load_highscore_from_disk(HighScoreFileName, &HighScore);
-    if(!result){
-        set_zero(&HighScore, sizeof(HighScore));
-    }
-
     TextureInfo tile_atlas = load_texture("data\\tile_sprite.png");
 
     BorderSprite = (Sprite){
@@ -387,7 +382,17 @@ void EngineInit(void){
 
     BackgroundSprite = PieceSprite;
 
-    Controls = load_controls_configuration();
+    // load saved data
+    SaveData saved_data;
+    result = os_read_file(&saved_data, sizeof(saved_data), SAVE_DATA_FILE_NAME);
+    if(result && saved_data.save_version == SAVE_DATA_VERSION){
+        HighScore = saved_data.highscore;
+        Controls  = saved_data.controls;
+    } else {
+        debug_message(Red_v4, "Fail to read saved data! Bad version or no saved found");
+        set_zero(&HighScore, sizeof(HighScore));
+        Controls = default_game_controls();
+    }
 
     //BackgroundSound = load_wave_file("C:\\Windows\\Media\\Ring10.wav");
     CursorSound     = load_wave_file("data\\audio\\ui_move.wav");
@@ -543,22 +548,22 @@ void update_grid(void){
 }
 
 void save_grid(void){ // @debug
-    b32 result = os_write_to_file(Grid, sizeof(Grid), "grid.bin");
+    b32 result = os_write_to_file(Grid, sizeof(Grid), DEBUG_GRID_FILE_NAME);
     if(!result){
-        enqueue_message(Red_v4, "Can't write file!");
+        debug_message(Red_v4, "Can't write file!");
         return;
     }
-    enqueue_message(Green_v4, "Grid saved!");
+    debug_message(Green_v4, "Grid saved!");
 }
 
 void load_grid(void){ // @debug
-    b32 result = os_read_file("grid.bin", Grid, sizeof(Grid));
+    b32 result = os_read_file(Grid, sizeof(Grid), DEBUG_GRID_FILE_NAME);
     if(!result){
-        enqueue_message(Red_v4, "Can't read file!");
+        debug_message(Red_v4, "Can't read file!");
         return;
     }
     restart_game(false);
-    enqueue_message(Green_v4, "Grid loaded!");
+    debug_message(Green_v4, "Grid loaded!");
 }
 
 void restart_game(b32 clear_grid){
@@ -679,7 +684,7 @@ void prompt(void){
     if(key_pressed(get_key(Controls.confirme))){
         if(confirmation_prompt_cursor == 1){
             restart_game(true);
-            enqueue_message(Green_v4, "Restarted!");
+            debug_message(Green_v4, "Restarted!");
         }
         GameMode = GM_Running;
         confirmation_prompt_cursor = false;
@@ -714,9 +719,9 @@ void game_running(void){
         PieceStatistics[Aim.piece.type - 1]++;
     }
 
-    // @Temp Force save scoreboard
+    // @Temp Force save
     if(key_pressed(Keyboard.h)){
-        save_highscore_to_disk(HighScoreFileName, &HighScore);
+        save_data_to_disk();
     }
 
     if(key_pressed(get_key(Controls.cancel))){ // Open settings menu
@@ -754,7 +759,7 @@ void game_running(void){
     if(key_pressed(Keyboard.m)){
         Debug.mode++;
         if(Debug.mode >= debug_modes) Debug.mode = 1;
-        enqueue_message(Red_v4, "Debug mode set [%s]", DebugModesNames[Debug.mode]);
+        debug_message(Red_v4, "Debug mode set [%s]", DebugModesNames[Debug.mode]);
         Debug.falling = false;
     }
 

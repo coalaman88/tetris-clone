@@ -141,7 +141,7 @@ b32 os_close_file(void *file);
 u8* os_read_whole_file(const char *name, i32 *bytes);
 u8* os_read_whole_file_handle(void *file_handle, i32 *size);
 b32 os_write_to_file(void *data, i32 bytes, const char *name);
-b32 os_read_file(const char *name, void *buffer, i32 bytes);
+b32 os_read_file(void *buffer, i32 bytes, const char *name);
 char* os_font_path(char *buffer, u32 size, const char *append);
 Date os_get_local_time(void);
 void *os_memory_alloc(size_t bytes);

@@ -461,7 +461,7 @@ b32 os_write_to_file(void *data, i32 bytes, const char *name){
     return (result != 0 && written == (DWORD)bytes);
 }
 
-b32 os_read_file(const char *name, void *buffer, i32 bytes){
+b32 os_read_file(void *buffer, i32 bytes, const char *name){
     DWORD read;
     HANDLE file = CreateFileA(name, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
     BOOL result = ReadFile(file, (void*)buffer, bytes, &read, NULL);

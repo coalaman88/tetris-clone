@@ -12,65 +12,14 @@ static i32 menu_stack_top = 0;
 static i32 pause_cursor_y = 0;
 static i32 main_cursor_y = 0;
 
-b32 load_highscore_from_disk(const char *file_name, Scoreboard *scoreboard){
-    FILE *file = fopen(file_name, "rb");
-    if(!file){
-        return false;
-    }
-    
-    char version[SCOREBOARD_FILE_VERSION_SIZE + 1];
-    size_t read = fread(version, SCOREBOARD_FILE_VERSION_SIZE, 1, file);
-    version[sizeof(version) - 1] = 0;
+b32 save_data_to_disk(void){
+    SaveData data = {
+        .save_version = SAVE_DATA_VERSION,
+        .highscore = HighScore,
+        .controls  = Controls,
+    };
 
-    if(read < 1){
-        enqueue_message(Red_v4, "unable to read highscore file!");
-        fclose(file);
-        return false;
-    }
-
-    if(strcmp(version, SCOREBOARD_FILE_VERSION) != 0){
-        enqueue_message(Red_v4, "highscore data with different version! %s", version);
-        fclose(file);
-        return false;
-    }
-
-    Scoreboard temp_scoreboard = {0};
-    read = fread(&temp_scoreboard, sizeof(Scoreboard), 1, file);
-    fclose(file);
-    if(read < 1){
-        enqueue_message(Red_v4, "unable to read highscore file!");
-        return false;
-    }
-
-    *scoreboard = temp_scoreboard;
-    return true;
-}
-
-b32 save_highscore_to_disk(const char *file_name, Scoreboard *scoreboard){
-    // TODO backup
-    FILE *file = fopen(file_name, "w+b");
-    if(!file){
-        return false;
-    }
-    size_t written;
-    
-    written = fwrite(SCOREBOARD_FILE_VERSION, SCOREBOARD_FILE_VERSION_SIZE, 1, file);
-    if(written < 1){
-        // TODO handle this..
-        assert(false);
-        return false;
-    }
-
-    written = fwrite(scoreboard, sizeof(Scoreboard), 1, file);
-    fclose(file);
-
-    if(written < 1){
-        // TODO handle this..
-        assert(false);
-        return false;
-    }
-
-    return true;
+    return os_write_to_file(&data, sizeof(data), SAVE_DATA_FILE_NAME);
 }
 
 static void move_cursor(i32 *cursor, i32 max){
@@ -195,7 +144,7 @@ static void highscore_menu(void){
             if(strcmp(state->new_name.buffer, "_") != 0){
                 ScoreInfo *info = &HighScore.score[state->insert_board_index];
                 strcpy_s(info->name, array_size(info->name), state->new_name.buffer);
-                save_highscore_to_disk(HighScoreFileName, &HighScore);
+                save_data_to_disk();
                 state->insert_mode_on = false;
                 set_zero(&state->new_name, sizeof(state->new_name));
                 close_menu();
@@ -324,6 +273,7 @@ static void settings_menu(void){
             } else if(context->cursor_y == key_count + 1){ // save controls
                 Controls = context->remap;
                 play_sound(ScoreSound, 1.0f, false);
+                save_data_to_disk();
                 close_menu();
             }
         } else if(key_pressed(get_key(Controls.cancel))){

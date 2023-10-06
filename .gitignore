@@ -68,7 +68,7 @@ dkms.conf
 # Project
 rng_test.c
 *.bin
+*.dat
 count_lines.bat
 build.bat
-highscore.dat
 config.ini
