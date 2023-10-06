@@ -243,7 +243,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
     QueryPerformanceFrequency(&freq);
     timeBeginPeriod(time_caps.wPeriodMin);
 
-    EngineSetup();
+    engine_setup();
 
     MSG msg = {0};
     timer_start.QuadPart = 0;
@@ -257,11 +257,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
             DispatchMessage(&msg);
         }
 
-        if(!window_has_focus) EngineClearInput();
+        if(!window_has_focus) engine_clear_input();
 
-        EngineUpdate();
+        engine_update();
         update_sounds(&AudioState); // TODO move this to other thread?
-        EngineProcessInput();
+        engine_process_input();
         DrawBuffer(window);
 
         QueryPerformanceCounter(&timer_end);

@@ -356,7 +356,7 @@ GameControls load_controls_configuration(void){
     return default_game_controls();
 }
 
-void EngineInit(void){
+void engine_init(void){
     b32 result;
     init_renderer();
     init_fonts();
@@ -415,24 +415,6 @@ void EngineInit(void){
 
 static inline Vec4 invert_color(Vec4 color){
     return Vec4(1.0f - color.x, 1.0f - color.y, 1.0f - color.z, color.w);
-}
-
-const f32 first_repeat_delay   = 0.25f;
-const f32 secound_repeat_delay = 0.065f;
-
-f32 repeat_delay  = 0;
-f32 pressed_timer = 0;
-b32 pressed = false;
-
-b32 key_repeat(Key k){
-    if(!k.state) return false;
-    if(!k.old_state) return true;
-    pressed = true;
-    if(pressed_timer >= repeat_delay){
-        repeat_delay = secound_repeat_delay;
-        return true;
-    }
-    return false;
 }
 
 void draw_background(i32 t_x, i32 t_y){
@@ -633,12 +615,13 @@ void move_piece(void){
         }
     }
 
-    if(key_repeat(get_key(Controls.left))){
+    // TODO use some delay
+    if(key_repeat(Controls.left)){
         if(!piece_collided(Aim.x - 1, Aim.y, &Aim.piece)){
             Aim.x -= 1;
             play_sound(MovePieceSound, 0.5f, false);
         }
-    } else if(key_repeat(get_key(Controls.right))){
+    } else if(key_repeat(Controls.right)){
         if(!piece_collided(Aim.x + 1, Aim.y, &Aim.piece)){
             Aim.x += 1;
             play_sound(MovePieceSound, 0.5f, false);
@@ -835,11 +818,7 @@ void game_running(void){
     );
 }
 
-void EngineUpdate(void){
-
-    // dirty key system
-    pressed = false;
-
+void engine_update(void){
     if(GameMode == GM_Menu){
         menu();
     } else if(GameMode == GM_Running){
@@ -850,16 +829,7 @@ void EngineUpdate(void){
         assert(false);
     }
 
-    update_messages(); // debug
-
-    // dirty key system
-    if(!pressed){
-        pressed_timer = 0;
-        repeat_delay  = first_repeat_delay;
-    }else{
-        if(pressed_timer >= repeat_delay) pressed_timer = 0;
-        pressed_timer += TimeElapsed;
-    }
+    update_messages(); // @Debug
 
     // @Debug
     static f32 time_count = 0;

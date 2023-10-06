@@ -75,6 +75,8 @@ static inline b32 key_pressed_sticky(Key *k){
     return key_pressed(*k)? k->state = false, true : false;
 }
 
+b32 key_repeat(i32 keycode);
+
 struct S_Mouse{
     i32 x, y;
     Key right, left;
@@ -88,11 +90,16 @@ typedef struct{
 }GameControls;
 extern GameControls Controls;
 
-static inline Key get_key(u32 key_code){ // @Move
+static inline Key *get_key_ref(u32 key_code){ // @Move
     assert(key_code < KEYCODE_COUNT);
     if(key_code == KEYCODE_NONE)
-        return (Key){0};
-    return Keyboard.keys[key_code - KEYCODE_A];
+        return NULL;
+    return &Keyboard.keys[key_code - KEYCODE_A];
+}
+
+static inline Key get_key(u32 key_code){ // @Move
+    Key *k = get_key_ref(key_code);
+    return k? *k : (Key){0};
 }
 
 static inline b32 button_pressed(u32 key_code){ // @Move
@@ -103,11 +110,11 @@ static inline b32 button_pressed(u32 key_code){ // @Move
 
 extern b32 GameRunning;
 
-void EngineInit(void);
-void EngineUpdate(void);
-void EngineClearInput(void);
-void EngineProcessInput(void);
-void EngineSetup(void);
+void engine_init(void);
+void engine_update(void);
+void engine_clear_input(void);
+void engine_process_input(void);
+void engine_setup(void);
 
 typedef struct {
 	i16* samples;

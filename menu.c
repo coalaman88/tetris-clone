@@ -32,7 +32,7 @@ static void move_cursor(i32 *cursor, i32 max){
     play_sound(CursorSound, UI_VOLUME, false);
 }
 
-void open_menu(i32 destination){ // TODO save the cursor position in the stack?
+void open_menu(i32 destination){
     assert(menu_stack_top + 1 < array_size(menu_stack));
     if(GameMode != GM_Menu){
         original_mode = GameMode;
@@ -154,15 +154,15 @@ static void highscore_menu(void){
 
         if(state->insert_mode_on){
             if(state->new_name.count < array_size(state->new_name.buffer) - 1){
-                for(i32 i = 0; i < 'z' - 'a'; i++){
-                    if(key_pressed(Keyboard.keys[i])){
-                        state->new_name.buffer[state->new_name.count++] = 'a' + (char)i;
+                for(i32 i = KEYCODE_A; i <= KEYCODE_Z; i++){
+                    if(key_repeat(i)){
+                        state->new_name.buffer[state->new_name.count++] = 'a' + (char)(i - KEYCODE_A);
                         break;
                     }
                 }
             }
 
-            if(key_pressed(Keyboard.back_space) && state->new_name.count > 0){
+            if(key_repeat(KEYCODE_BACKSPACE) && state->new_name.count > 0){
                 i32 i = --state->new_name.count;
                 state->new_name.buffer[i] = 0;
             }
