@@ -260,8 +260,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
         if(!window_has_focus) EngineClearInput();
 
         EngineUpdate();
-        // TODO move this to other thread?
-        update_sounds(&AudioState);
+        update_sounds(&AudioState); // TODO move this to other thread?
         EngineProcessInput();
         DrawBuffer(window);
 
@@ -271,7 +270,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLine,
 
         if(time_left > 0){
             Sleep(time_left);
-            ms_elapsed = TARGETFPS; // TODO Should i query again?
+            ms_elapsed = TARGETFPS;
         }
         TimeElapsed = (f32)ms_elapsed / 1000.0f;
     }

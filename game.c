@@ -127,7 +127,6 @@ const Vec4 PieceColors[] = {
     {0.2f, 0.3f, 0.1f, 1.0f},
 };
 
-i32 PieceIndex = 0;
 i32 Score = 0;
 b32 GameOver = false;
 b32 GamePause = false;
@@ -202,10 +201,7 @@ void update_messages(void){
 
 void debug_message(Vec4 color, const char *format, ...){
     char message[member_size(DebugMessage, content)];
-    va_list args;
-    va_start(args, format);
-    vsprintf_s(message, sizeof(message), format, args);
-    va_end(args);
+    format_string_varargs(message, sizeof(message), format);
 
     struct DebugMessageQueue_S *log = &DebugMessageQueue;
     DebugMessage *m = &log->messages[log->end];
@@ -774,8 +770,9 @@ void game_running(void){
         Debug.falling = false;
     }
 
+    static i32 piece_index = 0; // @Debug
     if(key_pressed(Keyboard.z)){
-        PieceIndex = (PieceIndex + 1) % array_size(Pieces);
+        piece_index = (piece_index + 1) % array_size(Pieces);
     }
 
     const i32 t_x = (WWIDTH / (i32)BlockSize - GridW) / 2;
@@ -787,8 +784,8 @@ void game_running(void){
         i32 m_y = Mouse.y / (i32)BlockSize - t_y;
 
         if(m_x >= 0 && m_x < GridW && m_y >= 0 && m_y < GridH){
-            assert(PieceIndex <= array_size(Pieces));
-            const Piece *piece = Pieces[PieceIndex];
+            assert(piece_index <= array_size(Pieces));
+            const Piece *piece = Pieces[piece_index];
 
             if(Debug.mode == place_aim){
                 if(Mouse.left.state && !StreakOn){

@@ -81,3 +81,10 @@ i32 draw_text(f32 x, f32 y, Vec4 color, const char *format, ...);
 i32 draw_centered_text(f32 x, f32 y, Vec4 color, const char *format, ...);
 i32 draw_text_warped(Rect rec, Vec4 color, const char *format, ...);
 i32 count_text_width(const char *string);
+
+#define format_string_varargs(buffer, size, format) {\
+        va_list _args;\
+        va_start(_args, format);\
+        vsprintf_s(buffer, size, format, _args);\
+        va_end(_args);\
+    }

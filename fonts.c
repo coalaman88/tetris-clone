@@ -135,12 +135,10 @@ i32 count_text_width(const char *string){
     return pen;
 }
 
+
 i32 draw_text(f32 x, f32 y, Vec4 color, const char *format, ...){
     char buffer[1024];
-    va_list args;
-    va_start(args, format);
-    vsprintf_s(buffer, sizeof(buffer), format, args);
-    va_end(args);
+    format_string_varargs(buffer, sizeof(buffer), format);
 
     Vec2i pen = Vec2i(0, 0);
     const char *c = buffer;
@@ -160,10 +158,7 @@ i32 draw_text(f32 x, f32 y, Vec4 color, const char *format, ...){
 
 i32 draw_centered_text(f32 x, f32 y, Vec4 color, const char *format, ...){
     char buffer[1024];
-    va_list args;
-    va_start(args, format);
-    vsprintf_s(buffer, sizeof(buffer), format, args);
-    va_end(args);
+    format_string_varargs(buffer, sizeof(buffer), format);
 
     i32 half_text_width = count_text_width(buffer) / 2;
     draw_text(x - (f32)half_text_width, y, color, buffer);
@@ -172,11 +167,8 @@ i32 draw_centered_text(f32 x, f32 y, Vec4 color, const char *format, ...){
 
 i32 draw_text_warped(Rect rec, Vec4 color, const char *format, ...){
     char buffer[1024];
-    va_list args;
-    va_start(args, format);
-    vsprintf_s(buffer, sizeof(buffer), format, args);
-    va_end(args);
-
+    format_string_varargs(buffer, sizeof(buffer), format);
+    
     Vec2i pen = Vec2i(0, 0);
     const char *c = buffer;
     while(*c){

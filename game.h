@@ -65,7 +65,7 @@ typedef struct{
 #define SAVE_DATA_FILE_NAME "save.dat"
 #define SAVE_DATA_VERSION 1
 
-#define DEBUG_GRID_FILE_NAME "grid.bin" // @Debug
+#define DEBUG_GRID_FILE_NAME "grid.dat" // @Debug
 
 extern Scoreboard HighScore;
 
@@ -75,7 +75,7 @@ void insert_in_scoreboard(i32 score, i32 placement);
 void init_highscore_menu_in_insert_mode(i32 board_position);
 void restart_game(b32 clear_grid);
 
-void enqueue_message(Vec4 color, const char *format, ...);
+void debug_message(Vec4 color, const char *format, ...);
 
 extern Sound BackgroundSound;
 extern Sound CursorSound;
