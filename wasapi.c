@@ -168,8 +168,8 @@ static DWORD CALLBACK wasapi_audio_thread(LPVOID arg){
 	WasapiAudio* audio = arg;
 
 	HRESULT result;
-	DWORD task;
-	HANDLE handle = AvSetMmThreadCharacteristicsW(L"Pro Audio", &task); // Setting high priority on windows vista.
+	DWORD task = 0;
+	HANDLE handle = AvSetMmThreadCharacteristicsW(L"Pro Audio", &task);
 	assert(handle);
 
 	IAudioClient* client = audio->client;
