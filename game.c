@@ -173,7 +173,7 @@ void update_messages(void){
 
     Font *font = CurrentFont;
     set_font(&DebugFont);
-    
+
     Vec4 bg_color = Vec4(Black_v4.x, Black_v4.y, Black_v4.z, 0.7f);
     f32 spacing = (f32)CurrentFont->line_height * 1.3f;
     f32 offset  = spacing;
@@ -232,7 +232,26 @@ static inline Vec4 get_piece_color(i32 piece_type){
 b32 piece_collided(i32 x, i32 y, const Piece *piece);
 
 Piece random_piece(void){
-    return *Pieces[random_n(array_size(Pieces))];
+    static i32 history[4] = {-1, -1, -1, -1};
+    static i32 index = 0;
+    i32 roll = 0;
+
+    for(i32 j = 0; j < array_size(history); j++){
+        roll = random_n(array_size(Pieces));
+        b32 is_new = true;
+        for(i32 i = 0; i < array_size(history); i++){
+            if(roll == history[i]){
+                is_new = false;
+                break;
+            }
+        }
+        if(is_new) break;
+    }
+
+    history[index++] = roll;
+    index %= array_size(history);
+
+    return *Pieces[roll];
 }
 
 void spawn_next_piece(void){
@@ -360,7 +379,7 @@ void engine_init(void){
     b32 result;
     init_renderer();
     init_fonts();
-    
+
     BigFont     = load_system_font("Arial.ttf", 36);
     DefaultFont = load_system_font("Arial.ttf", 20);
     DebugFont   = load_system_font("Consola.ttf", 16);
@@ -409,7 +428,7 @@ void engine_init(void){
     GameOverSound   = load_wave_file("data\\audio\\gameover.wav");
     ScoreSound      = load_wave_file("data\\audio\\score.wav");
     TetrisSound     = load_wave_file("data\\audio\\tetris.wav");
-    
+
     //play_sound(BackgroundSound, 0.2f, true);
 }
 
